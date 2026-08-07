@@ -3,7 +3,7 @@ import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { getDictionary, getLocale } from "@/lib/i18n/locale";
 import { interpolate } from "@/lib/i18n/format";
-import { computeMemberStatusForCycle, getAllCycleDates, isReportForCycle } from "@/lib/club";
+import { computeMemberStatusForCycle, isReportForCycle } from "@/lib/club";
 import { ClubSubNav } from "../club-sub-nav";
 import { ClubCalendarClient, type CycleInfo } from "./calendar-client";
 
@@ -17,6 +17,7 @@ export default async function ClubCalendarPage({ params }: { params: Promise<{ i
     include: {
       members: { include: { user: true } },
       paymentReports: true,
+      cycles: { orderBy: { cycleNumber: "asc" } },
     },
   });
 
@@ -25,47 +26,35 @@ export default async function ClubCalendarPage({ params }: { params: Promise<{ i
   const isAdmin = club.adminId === currentUserId;
   if (!club.members.some((m) => m.userId === currentUserId)) notFound();
 
-  const startDate = club.startDate;
+  const cycles: CycleInfo[] = club.cycles.map(({ cycleNumber, paymentDueDate, payoutDate }) => {
+    const paidMembers: string[] = [];
+    const pendingMembers: string[] = [];
+    let hasOverdue = false;
 
-  let cycles: CycleInfo[] = [];
-  if (startDate) {
-    const schedule = {
-      startDate,
-      durationUnit: club.durationUnit,
-      durationCount: club.durationCount,
-      paymentDueDay: club.paymentDueDay,
-      payoutDay: club.payoutDay,
+    for (const member of club.members) {
+      const reports = club.paymentReports.filter(
+        (r) => r.userId === member.userId && isReportForCycle(r, paymentDueDate, club.durationUnit)
+      );
+      const status = computeMemberStatusForCycle(reports, paymentDueDate, club.gracePeriodDays);
+      if (status === "PAID") paidMembers.push(member.user.fullName);
+      else pendingMembers.push(member.user.fullName);
+      if (status === "OVERDUE") hasOverdue = true;
+    }
+
+    const dueColor: CycleInfo["dueColor"] = pendingMembers.length === 0 ? "green" : hasOverdue ? "red" : "amber";
+
+    const payoutMember = club.members.find((m) => m.payoutTurn === cycleNumber);
+
+    return {
+      cycle: cycleNumber,
+      dueDateISO: paymentDueDate.toISOString(),
+      payoutDateISO: payoutDate.toISOString(),
+      dueColor,
+      paidMembers,
+      pendingMembers,
+      payoutMemberName: payoutMember?.user.fullName ?? null,
     };
-    cycles = getAllCycleDates(schedule).map(({ cycle, dueDate, payoutDate }) => {
-      const paidMembers: string[] = [];
-      const pendingMembers: string[] = [];
-      let hasOverdue = false;
-
-      for (const member of club.members) {
-        const reports = club.paymentReports.filter(
-          (r) => r.userId === member.userId && isReportForCycle(r, dueDate, club.durationUnit)
-        );
-        const status = computeMemberStatusForCycle(reports, dueDate, club.gracePeriodDays);
-        if (status === "PAID") paidMembers.push(member.user.fullName);
-        else pendingMembers.push(member.user.fullName);
-        if (status === "OVERDUE") hasOverdue = true;
-      }
-
-      const dueColor: CycleInfo["dueColor"] = pendingMembers.length === 0 ? "green" : hasOverdue ? "red" : "amber";
-
-      const payoutMember = club.members.find((m) => m.payoutTurn === cycle);
-
-      return {
-        cycle,
-        dueDateISO: dueDate.toISOString(),
-        payoutDateISO: payoutDate.toISOString(),
-        dueColor,
-        paidMembers,
-        pendingMembers,
-        payoutMemberName: payoutMember?.user.fullName ?? null,
-      };
-    });
-  }
+  });
 
   return (
     <div className="flex flex-col gap-6">
@@ -76,7 +65,7 @@ export default async function ClubCalendarPage({ params }: { params: Promise<{ i
         <p className="text-muted-foreground">{interpolate(t.clubs.calendar.subtitle, { club: club.name })}</p>
       </div>
 
-      <ClubCalendarClient cycles={cycles} notActive={!startDate} />
+      <ClubCalendarClient cycles={cycles} notActive={club.cycles.length === 0} />
     </div>
   );
 }

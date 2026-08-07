@@ -20,6 +20,7 @@ enum Role {
 enum ClubStatus {
   PENDING
   ACTIVE
+  PAUSED
   COMPLETED
   CANCELLED
 }
@@ -43,6 +44,13 @@ enum DurationUnit {
   MONTH
 }
 
+enum Frequency {
+  WEEKLY
+  BI_WEEKLY
+  EVERY_OTHER_WEEK
+  MONTHLY
+}
+
 enum TrustTier {
   BRONZE
   SILVER
@@ -61,6 +69,7 @@ model User {
   memberships    ClubMember[]
   createdClubs   SavingsClub[]   @relation("ClubAdmin")
   paymentReports PaymentReport[]
+  approvedReports PaymentReport[] @relation("ReportApprover")
   announcements  Announcement[]
 
   // Reputation
@@ -93,11 +102,13 @@ model Rating {
 model SavingsClub {
   id             String       @id @default(uuid())
   name           String
-  monthlyAmount  Float
+  quotaAmount    Float
   durationUnit   DurationUnit @default(MONTH)
   durationCount  Int // number of weeks or months, per durationUnit
+  frequency      Frequency    @default(MONTHLY) // cadence for WEEK-based clubs; always MONTHLY for MONTH-based clubs
   inviteCode     String       @unique
   status         ClubStatus   @default(PENDING)
+  roundNumber    Int          @default(1) // incremented each time a completed/paused club is reactivated for a new round
   adminId        String
   admin          User         @relation("ClubAdmin", fields: [adminId], references: [id])
 
@@ -108,6 +119,11 @@ model SavingsClub {
   payoutDay       Int
   lateFeeAmount   Float        @default(0)
   gracePeriodDays Int          @default(0) // days after the due date before a late fee applies
+
+  // Pre-existing/ongoing club import: cycles before startCycleNumber are marked
+  // completed externally so the club starts tracking from wherever it really is.
+  isPreExisting    Boolean @default(false)
+  startCycleNumber Int     @default(1)
 
   // Payment instructions shown to members on the report-payment page
   adminZelleInfo   String?
@@ -120,6 +136,26 @@ model SavingsClub {
   paymentReports PaymentReport[]
   announcements  Announcement[]
   ratings        Rating[]
+  cycles         ClubCycle[]
+}
+
+// Explicit, per-cycle due/payout dates. Generated when a club is activated
+// (or immediately at creation for imported/pre-existing clubs), and freely
+// editable afterward by the admin — dates are never recomputed from a formula
+// once a cycle row exists.
+model ClubCycle {
+  id             String   @id @default(uuid())
+  clubId         String
+  cycleNumber    Int
+  paymentDueDate DateTime
+  payoutDate     DateTime
+  isCompleted    Boolean  @default(false) // true for cycles before a pre-existing club's import point
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  club SavingsClub @relation(fields: [clubId], references: [id], onDelete: Cascade)
+
+  @@unique([clubId, cycleNumber])
 }
 
 model ClubMember {
@@ -145,11 +181,15 @@ model PaymentReport {
   referenceNote String? // transaction ID, memo, or confirmation #
   receiptUrl    String? // image / screenshot data URL
   status        ReportStatus @default(PENDING)
+  notes         String? // admin note left at approval/rejection time
+  approvedAt    DateTime?
+  approvedById  String?
   createdAt     DateTime     @default(now())
   updatedAt     DateTime     @updatedAt
 
-  club SavingsClub @relation(fields: [clubId], references: [id])
-  user User        @relation(fields: [userId], references: [id])
+  club       SavingsClub @relation(fields: [clubId], references: [id])
+  user       User        @relation(fields: [userId], references: [id])
+  approvedBy User?       @relation("ReportApprover", fields: [approvedById], references: [id])
 }
 
 model Announcement {

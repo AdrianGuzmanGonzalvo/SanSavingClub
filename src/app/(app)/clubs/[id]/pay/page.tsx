@@ -71,7 +71,7 @@ export default async function ClubPayPage({ params }: { params: Promise<{ id: st
 
         <PayForm
           clubId={club.id}
-          monthlyAmount={club.monthlyAmount}
+          quotaAmount={club.quotaAmount}
           lateFeeAmount={club.lateFeeAmount}
           paymentDueDay={club.paymentDueDay}
         />

@@ -69,7 +69,11 @@ export function TurnAssignmentSection({
               </Avatar>
               <span className="text-sm">
                 {member.fullName}
-                {member.isAdmin && <span className="ml-1 text-xs text-muted-foreground">{t.clubs.detail.adminTag}</span>}
+                {member.isAdmin && (
+                  <span className="ml-1.5 rounded-full bg-indigo-100 px-1.5 py-0.5 text-[10px] font-semibold text-indigo-700 dark:bg-indigo-950 dark:text-indigo-300">
+                    {t.clubs.detail.adminTag}
+                  </span>
+                )}
               </span>
             </div>
             <div className="flex items-center gap-2">
@@ -162,7 +166,7 @@ function RandomizeTurnsButton({ clubId }: { clubId: string }) {
   return (
     <AlertDialog>
       <AlertDialogTrigger asChild>
-        <Button variant="outline" size="sm" disabled={isPending}>
+        <Button variant="special" size="sm" disabled={isPending}>
           <Shuffle className="h-4 w-4" /> {t.clubs.admin.randomize}
         </Button>
       </AlertDialogTrigger>

@@ -1,5 +1,10 @@
-import { addDays, addWeeks, differenceInCalendarMonths, differenceInCalendarWeeks, isSameWeek, setDay } from "date-fns";
-import type { DurationUnit, PaymentReport, ReportStatus } from "@prisma/client";
+import { addDays, addWeeks, endOfWeek, isWithinInterval, setDay, startOfWeek, subMonths, subWeeks } from "date-fns";
+import type { DurationUnit, Frequency, PaymentReport, ReportStatus } from "@prisma/client";
+
+/** Number of weeks between cycles for a WEEK-based schedule at the given payment frequency. */
+export function weeksPerCycle(frequency: Frequency): number {
+  return frequency === "WEEKLY" ? 1 : 2;
+}
 
 const INVITE_CODE_ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
 
@@ -29,33 +34,54 @@ export interface ClubSchedule {
   durationCount: number;
   paymentDueDay: number;
   payoutDay: number;
+  frequency: Frequency;
 }
 
-function dateForCycle(startDate: Date, unit: DurationUnit, cycle: number, day: number): Date {
+function dateForCycle(startDate: Date, unit: DurationUnit, frequency: Frequency, cycle: number, day: number): Date {
   const offset = cycle - 1;
-  return unit === "WEEK" ? dateInOffsetWeek(startDate, offset, day) : dateInOffsetMonth(startDate, offset, day);
+  return unit === "WEEK"
+    ? dateInOffsetWeek(startDate, offset * weeksPerCycle(frequency), day)
+    : dateInOffsetMonth(startDate, offset, day);
 }
 
 export function computeCycleDueDate(
-  club: Pick<ClubSchedule, "startDate" | "durationUnit" | "paymentDueDay">,
+  club: Pick<ClubSchedule, "startDate" | "durationUnit" | "paymentDueDay" | "frequency">,
   cycle: number
 ): Date {
-  return dateForCycle(club.startDate, club.durationUnit, cycle, club.paymentDueDay);
+  return dateForCycle(club.startDate, club.durationUnit, club.frequency, cycle, club.paymentDueDay);
 }
 
 export function computeCyclePayoutDate(
-  club: Pick<ClubSchedule, "startDate" | "durationUnit" | "payoutDay">,
+  club: Pick<ClubSchedule, "startDate" | "durationUnit" | "payoutDay" | "frequency">,
   cycle: number
 ): Date {
-  return dateForCycle(club.startDate, club.durationUnit, cycle, club.payoutDay);
+  return dateForCycle(club.startDate, club.durationUnit, club.frequency, cycle, club.payoutDay);
 }
 
-export function getCurrentCycle(startDate: Date, durationUnit: DurationUnit, durationCount: number): number {
-  const diff =
-    durationUnit === "WEEK"
-      ? differenceInCalendarWeeks(new Date(), startDate, { weekStartsOn: 0 }) + 1
-      : differenceInCalendarMonths(new Date(), startDate) + 1;
-  return Math.min(Math.max(diff, 1), durationCount);
+/**
+ * Resolves the "current" cycle from explicit ClubCycle rows instead of a date
+ * formula: it's the highest-numbered non-completed cycle whose due date has
+ * already arrived, or the earliest non-completed cycle if none has yet.
+ */
+export function getCurrentCycleFromRows(
+  cycles: { cycleNumber: number; paymentDueDate: Date; isCompleted: boolean }[]
+): number {
+  const active = [...cycles].filter((c) => !c.isCompleted).sort((a, b) => a.cycleNumber - b.cycleNumber);
+  if (active.length === 0) {
+    return cycles.length > 0 ? Math.max(...cycles.map((c) => c.cycleNumber)) : 1;
+  }
+  const now = new Date();
+  let current = active[0].cycleNumber;
+  for (const c of active) {
+    if (c.paymentDueDate <= now) current = c.cycleNumber;
+    else break;
+  }
+  return current;
+}
+
+/** Back-dates `date` by `cyclesBack` cycles — used to derive a synthetic cycle-1 anchor from a leader-entered current-cycle date. */
+export function subtractCycles(date: Date, cyclesBack: number, durationUnit: DurationUnit, frequency: Frequency): Date {
+  return durationUnit === "WEEK" ? subWeeks(date, cyclesBack * weeksPerCycle(frequency)) : subMonths(date, cyclesBack);
 }
 
 export interface CycleDates {
@@ -75,14 +101,17 @@ export function getAllCycleDates(club: ClubSchedule): CycleDates[] {
   });
 }
 
-/** A payment report "belongs" to whichever cycle's due-date period (week or month) contains its reported payment date. */
+/** A payment report "belongs" to whichever cycle's due-date period (week(s) or month) contains its reported payment date. */
 export function isReportForCycle(
   report: Pick<PaymentReport, "paymentDate">,
   cycleDueDate: Date,
-  durationUnit: DurationUnit
+  durationUnit: DurationUnit,
+  frequency: Frequency = "MONTHLY"
 ): boolean {
   if (durationUnit === "WEEK") {
-    return isSameWeek(report.paymentDate, cycleDueDate, { weekStartsOn: 0 });
+    const windowStart = startOfWeek(subWeeks(cycleDueDate, weeksPerCycle(frequency) - 1), { weekStartsOn: 0 });
+    const windowEnd = endOfWeek(cycleDueDate, { weekStartsOn: 0 });
+    return isWithinInterval(report.paymentDate, { start: windowStart, end: windowEnd });
   }
   return (
     report.paymentDate.getFullYear() === cycleDueDate.getFullYear() &&
@@ -110,10 +139,10 @@ export function sumApprovedAmount(reports: Pick<PaymentReport, "status" | "amoun
 }
 
 export function computeAmountDue(
-  club: { monthlyAmount: number; lateFeeAmount: number; gracePeriodDays: number },
+  club: { quotaAmount: number; lateFeeAmount: number; gracePeriodDays: number },
   paymentDate: Date,
   cycleDueDate: Date
 ): { amount: number; isLate: boolean } {
   const isLate = paymentDate > addDays(cycleDueDate, club.gracePeriodDays);
-  return { amount: club.monthlyAmount + (isLate ? club.lateFeeAmount : 0), isLate };
+  return { amount: club.quotaAmount + (isLate ? club.lateFeeAmount : 0), isLate };
 }

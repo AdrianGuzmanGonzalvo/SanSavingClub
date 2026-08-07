@@ -1,6 +1,7 @@
 "use client";
 
 import { useActionState } from "react";
+import { useSearchParams } from "next/navigation";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -14,6 +15,8 @@ const initialState: ClubFormState = {};
 export default function JoinClubPage() {
   const [state, formAction, isPending] = useActionState(joinClubAction, initialState);
   const { dict: t } = useI18n();
+  const searchParams = useSearchParams();
+  const prefilledCode = searchParams.get("code") ?? "";
 
   return (
     <div className="mx-auto max-w-md">
@@ -30,6 +33,7 @@ export default function JoinClubPage() {
                 id="inviteCode"
                 name="inviteCode"
                 placeholder="ABC1234"
+                defaultValue={prefilledCode}
                 className="font-mono uppercase tracking-widest"
                 required
               />

@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Bell, LayoutDashboard, PiggyBank } from "lucide-react";
+import { Bell, LayoutDashboard, PiggyBank, User } from "lucide-react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import {
@@ -37,7 +37,7 @@ export function AppHeader({ userName, userEmail }: { userName: string; userEmail
   const navLinks = [{ href: "/dashboard", label: t.header.dashboard, icon: LayoutDashboard }];
 
   return (
-    <header className="sticky top-0 z-10 border-b bg-background/95 backdrop-blur">
+    <header className="sticky top-0 z-10 border-b border-slate-200/80 bg-white/80 backdrop-blur-md dark:border-slate-800/80 dark:bg-slate-900/70">
       <div className="mx-auto flex max-w-5xl items-center justify-between px-6 py-3">
         <Link href="/dashboard" className="flex items-center gap-2 font-semibold">
           <PiggyBank className="h-5 w-5 text-primary" />
@@ -96,6 +96,12 @@ export function AppHeader({ userName, userEmail }: { userName: string; userEmail
                 <p className="text-sm font-medium leading-none">{userName}</p>
                 <p className="text-xs leading-none text-muted-foreground mt-1">{userEmail}</p>
               </DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem asChild>
+                <Link href="/profile">
+                  <User /> {t.header.profile}
+                </Link>
+              </DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem onSelect={() => signOutAction()}>{t.header.signOut}</DropdownMenuItem>
             </DropdownMenuContent>

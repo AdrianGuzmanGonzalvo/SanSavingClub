@@ -24,12 +24,12 @@ function todayInputValue(): string {
 
 export function PayForm({
   clubId,
-  monthlyAmount,
+  quotaAmount,
   lateFeeAmount,
   paymentDueDay,
 }: {
   clubId: string;
-  monthlyAmount: number;
+  quotaAmount: number;
   lateFeeAmount: number;
   paymentDueDay: number;
 }) {
@@ -93,9 +93,9 @@ export function PayForm({
 
           <div className="flex flex-col gap-2">
             <Label htmlFor="amount">{t.clubs.pay.amount}</Label>
-            <Input id="amount" name="amount" type="number" min="0.01" step="0.01" defaultValue={monthlyAmount} required />
+            <Input id="amount" name="amount" type="number" min="0.01" step="0.01" defaultValue={quotaAmount} required />
             <p className="text-xs text-muted-foreground">
-              {interpolate(t.clubs.pay.suggestedAmount, { amount: formatUSD(monthlyAmount) })}
+              {interpolate(t.clubs.pay.suggestedAmount, { amount: formatUSD(quotaAmount) })}
             </p>
           </div>
 
@@ -113,7 +113,7 @@ export function PayForm({
               <p className="text-xs text-amber-600 dark:text-amber-400">
                 {interpolate(t.clubs.pay.lateFeeNotice, {
                   fee: formatUSD(lateFeeAmount),
-                  total: formatUSD(monthlyAmount + lateFeeAmount),
+                  total: formatUSD(quotaAmount + lateFeeAmount),
                 })}
               </p>
             )}

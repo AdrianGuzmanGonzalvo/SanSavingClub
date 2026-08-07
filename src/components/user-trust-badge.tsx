@@ -15,9 +15,19 @@ export interface TrustStats {
 }
 
 const TIER_CONFIG: Record<TrustTier, { icon: typeof Trophy; className: string }> = {
-  BRONZE: { icon: Medal, className: "bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300" },
-  SILVER: { icon: Award, className: "bg-slate-200 text-slate-700 dark:bg-slate-700 dark:text-slate-200" },
-  GOLD: { icon: Trophy, className: "bg-yellow-100 text-yellow-800 dark:bg-yellow-950 dark:text-yellow-300" },
+  BRONZE: {
+    icon: Medal,
+    className: "border-amber-800/30 bg-gradient-to-b from-amber-200 to-amber-400/70 text-amber-900 dark:border-amber-700/40 dark:from-amber-900 dark:to-amber-950 dark:text-amber-300",
+  },
+  SILVER: {
+    icon: Award,
+    className: "border-slate-400/40 bg-gradient-to-b from-slate-200 to-blue-200/70 text-slate-700 dark:border-slate-500/40 dark:from-slate-600 dark:to-slate-700 dark:text-slate-200",
+  },
+  GOLD: {
+    icon: Trophy,
+    className:
+      "border-amber-400/60 bg-gradient-to-b from-amber-200 via-yellow-300 to-amber-400 text-amber-950 shadow-sm shadow-amber-500/40 ring-1 ring-amber-400/50 dark:border-amber-500/50 dark:from-amber-600 dark:via-yellow-500 dark:to-amber-600 dark:text-amber-50",
+  },
 };
 
 export function UserTrustBadge({

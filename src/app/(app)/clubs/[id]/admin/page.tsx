@@ -1,20 +1,24 @@
+import Link from "next/link";
 import { notFound } from "next/navigation";
-import { CheckCircle2, ArrowUpDown, Settings, Megaphone } from "lucide-react";
+import { CheckCircle2, ArrowUpDown, CalendarClock, Settings, Megaphone, Users } from "lucide-react";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { formatDate, formatUSD } from "@/lib/format";
 import { getDictionary, getLocale } from "@/lib/i18n/locale";
 import { interpolate } from "@/lib/i18n/format";
-import { getCurrentCycle } from "@/lib/club";
+import { getCurrentCycleFromRows } from "@/lib/club";
 import { Card, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ClubSubNav } from "../club-sub-nav";
 import { TurnAssignmentSection } from "./turn-assignment";
 import { SwapTurnsDialog } from "./swap-turns-dialog";
 import { ClubSettingsForm } from "./club-settings-form";
+import { CycleDatesPanel, type CycleRow } from "./cycle-dates-panel";
 import { PaymentApprovalQueue, type PendingReport } from "./payment-queue";
 import { AnnouncementPanel, type AnnouncementItem } from "./announcement-panel";
 import { CompleteClubDialog } from "./complete-club-dialog";
+import { LifecycleControls } from "./lifecycle-controls";
 
 export default async function ClubAdminPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -28,6 +32,7 @@ export default async function ClubAdminPage({ params }: { params: Promise<{ id: 
       members: { include: { user: true }, orderBy: { joinedAt: "asc" } },
       paymentReports: { include: { user: true }, orderBy: { createdAt: "desc" } },
       announcements: { include: { author: true }, orderBy: { createdAt: "desc" } },
+      cycles: { orderBy: { cycleNumber: "asc" } },
     },
   });
 
@@ -78,12 +83,19 @@ export default async function ClubAdminPage({ params }: { params: Promise<{ id: 
     createdAt: formatDate(a.createdAt, locale),
   }));
 
-  const currentCycle = club.startDate ? getCurrentCycle(club.startDate, club.durationUnit, club.durationCount) : 0;
+  const currentCycle = club.cycles.length > 0 ? getCurrentCycleFromRows(club.cycles) : 0;
   const canComplete = club.status === "ACTIVE" && currentCycle >= club.durationCount;
   const canEdit = club.status === "PENDING" || club.status === "ACTIVE";
   const ratableMembers = club.members
     .filter((m) => m.userId !== club.adminId)
     .map((m) => ({ userId: m.userId, fullName: m.user.fullName }));
+
+  const cycleRows: CycleRow[] = club.cycles.map((c) => ({
+    cycleNumber: c.cycleNumber,
+    paymentDueDateISO: c.paymentDueDate.toISOString(),
+    payoutDateISO: c.payoutDate.toISOString(),
+    isCompleted: c.isCompleted,
+  }));
 
   return (
     <div className="flex flex-col gap-6">
@@ -92,11 +104,17 @@ export default async function ClubAdminPage({ params }: { params: Promise<{ id: 
       <div className="flex flex-col items-start justify-between gap-3 sm:flex-row sm:items-center">
         <div className="flex flex-col gap-1">
           <h1 className="text-2xl font-bold tracking-tight">{t.clubs.admin.title}</h1>
-          <p className="text-muted-foreground">{interpolate(t.clubs.admin.subtitle, { club: club.name })}</p>
+          <p className="text-muted-foreground">
+            {interpolate(t.clubs.admin.subtitle, { club: club.name })} &middot;{" "}
+            {interpolate(t.clubs.admin.roundLabel, { round: club.roundNumber })}
+          </p>
         </div>
-        {club.status === "ACTIVE" && (
-          <CompleteClubDialog clubId={club.id} members={ratableMembers} canComplete={canComplete} />
-        )}
+        <div className="flex flex-wrap items-center gap-2">
+          {club.status === "ACTIVE" && (
+            <CompleteClubDialog clubId={club.id} members={ratableMembers} canComplete={canComplete} />
+          )}
+          <LifecycleControls clubId={club.id} status={club.status} roundNumber={club.roundNumber} />
+        </div>
       </div>
 
       <Tabs defaultValue="approvals">
@@ -106,6 +124,9 @@ export default async function ClubAdminPage({ params }: { params: Promise<{ id: 
           </TabsTrigger>
           <TabsTrigger value="turns">
             <ArrowUpDown /> {t.clubs.admin.tabs.turns}
+          </TabsTrigger>
+          <TabsTrigger value="cycles">
+            <CalendarClock /> {t.clubs.admin.tabs.cycles}
           </TabsTrigger>
           <TabsTrigger value="settings">
             <Settings /> {t.clubs.admin.tabs.settings}
@@ -120,6 +141,11 @@ export default async function ClubAdminPage({ params }: { params: Promise<{ id: 
         </TabsContent>
 
         <TabsContent value="turns" className="mt-4 flex flex-col gap-4">
+          <Button variant="outline" size="sm" className="self-end" asChild>
+            <Link href={`/clubs/${club.id}/admin/members`}>
+              <Users /> {t.clubs.admin.membersPageTitle}
+            </Link>
+          </Button>
           <TurnAssignmentSection
             clubId={club.id}
             members={memberRows}
@@ -128,6 +154,10 @@ export default async function ClubAdminPage({ params }: { params: Promise<{ id: 
             canEditTurns={canEdit}
           />
           <SwapTurnsDialog clubId={club.id} members={memberRows} canEdit={canEdit} />
+        </TabsContent>
+
+        <TabsContent value="cycles" className="mt-4">
+          <CycleDatesPanel clubId={club.id} cycles={cycleRows} canEdit={canEdit} />
         </TabsContent>
 
         <TabsContent value="settings" className="mt-4">

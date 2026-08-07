@@ -1,22 +1,16 @@
 import { notFound } from "next/navigation";
-import { AlertTriangle, CalendarClock, Gift, Megaphone, Sparkles, Users } from "lucide-react";
+import { AlertTriangle, CalendarClock, Gift, Megaphone, RefreshCw, Sparkles, Users } from "lucide-react";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { formatDate, formatUSD } from "@/lib/format";
 import { getDictionary, getLocale } from "@/lib/i18n/locale";
 import { formatClubDuration, formatScheduleDay, interpolate } from "@/lib/i18n/format";
-import {
-  computeCycleDueDate,
-  computeCyclePayoutDate,
-  computeMemberStatusForCycle,
-  getCurrentCycle,
-  isReportForCycle,
-  sumApprovedAmount,
-} from "@/lib/club";
+import { computeMemberStatusForCycle, getCurrentCycleFromRows, isReportForCycle, sumApprovedAmount } from "@/lib/club";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
+import { ClubStatusBadge } from "@/components/club-status-badge";
 import { InviteCode } from "./invite-code";
 import { ActivateClubButton } from "./admin-actions";
 import { MemberStatusBadge } from "./status-badge";
@@ -24,6 +18,7 @@ import { ClubSubNav } from "./club-sub-nav";
 import { ExportButtons } from "./export-buttons";
 import type { PaymentHistoryRow } from "@/lib/export";
 import { UserTrustBadge } from "@/components/user-trust-badge";
+import { PaymentHistoryCard, type PaymentHistoryEntry } from "./payment-history";
 
 function initials(name: string) {
   return name.split(" ").map((p) => p[0]).filter(Boolean).slice(0, 2).join("").toUpperCase();
@@ -42,6 +37,7 @@ export default async function ClubDetailPage({ params }: { params: Promise<{ id:
       members: { include: { user: true }, orderBy: { joinedAt: "asc" } },
       paymentReports: { include: { user: true } },
       announcements: { include: { author: true }, orderBy: { createdAt: "desc" }, take: 3 },
+      cycles: { orderBy: { cycleNumber: "asc" } },
     },
   });
 
@@ -52,19 +48,33 @@ export default async function ClubDetailPage({ params }: { params: Promise<{ id:
 
   const isAdmin = club.adminId === currentUserId;
 
-  const startDate = club.startDate;
-  const currentCycle = startDate ? getCurrentCycle(startDate, club.durationUnit, club.durationCount) : null;
-  const cycleDueDate =
-    startDate && currentCycle
-      ? computeCycleDueDate({ startDate, durationUnit: club.durationUnit, paymentDueDay: club.paymentDueDay }, currentCycle)
-      : null;
+  const currentCycle = club.cycles.length > 0 ? getCurrentCycleFromRows(club.cycles) : null;
+  const currentCycleRow = currentCycle ? club.cycles.find((c) => c.cycleNumber === currentCycle) : null;
+  const cycleDueDate = currentCycleRow?.paymentDueDate ?? null;
 
   const payoutMember = currentCycle ? club.members.find((m) => m.payoutTurn === currentCycle) : null;
-  const payoutDate =
-    startDate && currentCycle
-      ? computeCyclePayoutDate({ startDate, durationUnit: club.durationUnit, payoutDay: club.payoutDay }, currentCycle)
-      : null;
-  const poolTotal = club.monthlyAmount * club.members.length;
+  const payoutDate = currentCycleRow?.payoutDate ?? null;
+  const poolTotal = club.quotaAmount * club.members.length;
+
+  const paymentHistoryEntries: PaymentHistoryEntry[] = club.paymentReports
+    .filter((r) => r.status === "APPROVED")
+    .slice()
+    .sort((a, b) => (b.approvedAt?.getTime() ?? 0) - (a.approvedAt?.getTime() ?? 0))
+    .map((r) => {
+      const member = club.members.find((m) => m.userId === r.userId);
+      const matchingCycle = club.cycles.find((c) =>
+        isReportForCycle(r, c.paymentDueDate, club.durationUnit, club.frequency)
+      );
+      return {
+        id: r.id,
+        memberName: member?.user.fullName ?? t.clubs.detail.unassigned,
+        cycleNumber: matchingCycle?.cycleNumber ?? null,
+        amount: formatUSD(r.amount),
+        submittedOn: formatDate(r.createdAt, locale),
+        approvedOn: r.approvedAt ? formatDate(r.approvedAt, locale) : null,
+        receiptUrl: r.receiptUrl,
+      };
+    });
 
   const exportRows: PaymentHistoryRow[] = club.paymentReports
     .slice()
@@ -85,16 +95,18 @@ export default async function ClubDetailPage({ params }: { params: Promise<{ id:
     <div className="flex flex-col gap-6">
       <ClubSubNav clubId={club.id} isAdmin={isAdmin} />
 
-      <Card>
-        <CardHeader className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+      <Card className="relative overflow-hidden border-none bg-gradient-to-br from-emerald-600 via-teal-700 to-indigo-800 text-white shadow-lg">
+        <div className="pointer-events-none absolute -top-16 -right-16 h-56 w-56 rounded-full bg-white/10 blur-3xl" />
+        <div className="pointer-events-none absolute -bottom-20 -left-10 h-56 w-56 rounded-full bg-emerald-300/10 blur-3xl" />
+        <CardHeader className="relative flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
           <div className="flex flex-col gap-1">
-            <CardTitle className="text-2xl">{club.name}</CardTitle>
-            <p className="text-sm text-muted-foreground">
-              {interpolate(t.dashboard.perMonth, { amount: formatUSD(club.monthlyAmount) })} &middot;{" "}
+            <CardTitle className="text-2xl text-white">{club.name}</CardTitle>
+            <p className="text-sm text-white/80">
+              {interpolate(t.dashboard.perMonth, { amount: formatUSD(club.quotaAmount) })} &middot;{" "}
               {formatClubDuration(t, club.durationUnit, club.durationCount)} &middot;{" "}
               {interpolate(t.clubs.detail.adminLabel, { name: club.admin.fullName })}
             </p>
-            <p className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
+            <p className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-white/80">
               <span className="flex items-center gap-1">
                 <CalendarClock className="h-3.5 w-3.5" />
                 {interpolate(t.clubs.detail.dueOnDay, { day: formatScheduleDay(t, club.durationUnit, club.paymentDueDay) })}
@@ -112,19 +124,27 @@ export default async function ClubDetailPage({ params }: { params: Promise<{ id:
             </p>
           </div>
           <div className="flex flex-col items-start gap-2 sm:items-end">
-            <Badge variant={club.status === "ACTIVE" ? "default" : "secondary"}>{t.common.clubStatus[club.status]}</Badge>
+            <div className="flex flex-wrap items-center gap-2">
+              {club.isPreExisting && currentCycle && (
+                <Badge variant="outline" className="flex items-center gap-1 border-white/30 bg-white/10 text-white">
+                  <RefreshCw className="h-3 w-3" />
+                  {interpolate(t.clubs.detail.ongoingBadge, { current: currentCycle, total: club.durationCount })}
+                </Badge>
+              )}
+              <ClubStatusBadge status={club.status} t={t} />
+            </div>
             <InviteCode code={club.inviteCode} />
           </div>
         </CardHeader>
         {isAdmin && club.status === "PENDING" && (
-          <CardContent>
+          <CardContent className="relative">
             <ActivateClubButton clubId={club.id} />
           </CardContent>
         )}
       </Card>
 
       {currentCycle && payoutDate && (
-        <Card className="border-primary/40 bg-primary/5">
+        <Card className="border-l-4 border-l-emerald-500 bg-emerald-50/50 shadow-sm transition-all duration-200 hover:shadow-lg dark:bg-emerald-950/20">
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-base">
               <Sparkles className="h-4 w-4 text-primary" />
@@ -205,7 +225,7 @@ export default async function ClubDetailPage({ params }: { params: Promise<{ id:
               {club.members.map((member) => {
                 const memberReportsForCycle = cycleDueDate
                   ? club.paymentReports.filter(
-                      (r) => r.userId === member.userId && isReportForCycle(r, cycleDueDate, club.durationUnit)
+                      (r) => r.userId === member.userId && isReportForCycle(r, cycleDueDate, club.durationUnit, club.frequency)
                     )
                   : [];
                 const status = cycleDueDate
@@ -214,13 +234,9 @@ export default async function ClubDetailPage({ params }: { params: Promise<{ id:
                 const totalSaved = sumApprovedAmount(
                   club.paymentReports.filter((r) => r.userId === member.userId)
                 );
-                const memberPayoutDate =
-                  startDate && member.payoutTurn
-                    ? computeCyclePayoutDate(
-                        { startDate, durationUnit: club.durationUnit, payoutDay: club.payoutDay },
-                        member.payoutTurn
-                      )
-                    : null;
+                const memberPayoutDate = member.payoutTurn
+                  ? (club.cycles.find((c) => c.cycleNumber === member.payoutTurn)?.payoutDate ?? null)
+                  : null;
                 const isSelf = member.userId === currentUserId;
                 const isClubMemberAdmin = member.userId === club.adminId;
 
@@ -238,7 +254,9 @@ export default async function ClubDetailPage({ params }: { params: Promise<{ id:
                           {member.user.fullName}
                           {isSelf && <span className="ml-1 text-xs text-muted-foreground">{t.clubs.detail.you}</span>}
                           {isClubMemberAdmin && (
-                            <span className="ml-1 text-xs text-muted-foreground">{t.clubs.detail.adminTag}</span>
+                            <span className="ml-1.5 rounded-full bg-indigo-100 px-1.5 py-0.5 text-[10px] font-semibold text-indigo-700 dark:bg-indigo-950 dark:text-indigo-300">
+                              {t.clubs.detail.adminTag}
+                            </span>
                           )}
                         </span>
                       </div>
@@ -267,6 +285,8 @@ export default async function ClubDetailPage({ params }: { params: Promise<{ id:
           </Table>
         </CardContent>
       </Card>
+
+      <PaymentHistoryCard entries={paymentHistoryEntries} />
     </div>
   );
 }

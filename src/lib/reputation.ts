@@ -1,6 +1,6 @@
 import { prisma } from "@/lib/prisma";
-import { getAllCycleDates, isReportForCycle } from "@/lib/club";
-import type { PaymentReport, SavingsClub, TrustTier } from "@prisma/client";
+import { isReportForCycle } from "@/lib/club";
+import type { DurationUnit, Frequency, PaymentReport, TrustTier } from "@prisma/client";
 
 export function computeTrustTier(completedClubsCount: number, punctualityScore: number): TrustTier {
   if (completedClubsCount >= 6 && punctualityScore >= 90) return "GOLD";
@@ -9,18 +9,15 @@ export function computeTrustTier(completedClubsCount: number, punctualityScore: 
 }
 
 /** Whether a payment report was made on or before the due date of the cycle it belongs to. */
-export function isPaymentOnTime(club: SavingsClub, report: Pick<PaymentReport, "paymentDate">): boolean {
-  if (!club.startDate) return true;
-  const cycles = getAllCycleDates({
-    startDate: club.startDate,
-    durationUnit: club.durationUnit,
-    durationCount: club.durationCount,
-    paymentDueDay: club.paymentDueDay,
-    payoutDay: club.payoutDay,
-  });
-  const matchingCycle = cycles.find((c) => isReportForCycle(report, c.dueDate, club.durationUnit));
+export function isPaymentOnTime(
+  durationUnit: DurationUnit,
+  frequency: Frequency,
+  cycles: { paymentDueDate: Date }[],
+  report: Pick<PaymentReport, "paymentDate">
+): boolean {
+  const matchingCycle = cycles.find((c) => isReportForCycle(report, c.paymentDueDate, durationUnit, frequency));
   if (!matchingCycle) return true;
-  return report.paymentDate <= matchingCycle.dueDate;
+  return report.paymentDate <= matchingCycle.paymentDueDate;
 }
 
 /** Updates a member's punctuality stats after one of their payments is approved. */

@@ -3,11 +3,12 @@
 import { redirect } from "next/navigation";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
-import { generateInviteCode, getCurrentCycle } from "@/lib/club";
+import { generateInviteCode, getAllCycleDates, getCurrentCycleFromRows, subtractCycles } from "@/lib/club";
 import { getDictionary, getLocale } from "@/lib/i18n/locale";
+import { formatDate } from "@/lib/format";
 import { formatScheduleDay, interpolate } from "@/lib/i18n/format";
 import { isPaymentOnTime, recordClubCompletion, recordPaymentApproval, recordRating } from "@/lib/reputation";
-import type { DurationUnit, PaymentMethod } from "@prisma/client";
+import type { DurationUnit, Frequency, PaymentMethod } from "@prisma/client";
 
 export interface ClubFormState {
   error?: string;
@@ -15,6 +16,7 @@ export interface ClubFormState {
 
 const ALLOWED_METHODS: PaymentMethod[] = ["ZELLE", "CASH_APP", "BANK_TRANSFER", "CASH", "OTHER"];
 const ALLOWED_UNITS: DurationUnit[] = ["WEEK", "MONTH"];
+const WEEK_FREQUENCIES: Frequency[] = ["WEEKLY", "BI_WEEKLY", "EVERY_OTHER_WEEK"];
 const DURATION_COUNT_BOUNDS: Record<DurationUnit, [number, number]> = {
   WEEK: [1, 52],
   MONTH: [1, 24],
@@ -44,26 +46,67 @@ export async function createClubAction(_prevState: ClubFormState, formData: Form
   if (!session?.user) return { error: t.auth.mustBeSignedIn };
 
   const name = String(formData.get("name") ?? "").trim();
-  const monthlyAmount = Number(formData.get("monthlyAmount"));
+  const quotaAmount = Number(formData.get("quotaAmount"));
   const durationUnit = String(formData.get("durationUnit") ?? "") as DurationUnit;
   const durationCount = Number(formData.get("durationCount"));
-  const paymentDueDay = Number(formData.get("paymentDueDay"));
-  const payoutDay = Number(formData.get("payoutDay"));
   const lateFeeAmount = Number(formData.get("lateFeeAmount") || 0);
+  const mode = String(formData.get("mode") ?? "new");
+  const isPreExisting = mode === "existing";
 
   if (!name) return { error: t.clubs.new.errors.nameRequired };
-  if (!Number.isFinite(monthlyAmount) || monthlyAmount <= 0) return { error: t.clubs.new.errors.invalidAmount };
+  if (!Number.isFinite(quotaAmount) || quotaAmount <= 0) return { error: t.clubs.new.errors.invalidAmount };
   if (!ALLOWED_UNITS.includes(durationUnit)) return { error: t.clubs.new.errors.invalidDuration };
   const [countMin, countMax] = DURATION_COUNT_BOUNDS[durationUnit];
   if (!Number.isInteger(durationCount) || durationCount < countMin || durationCount > countMax) {
     return { error: t.clubs.new.errors.invalidDuration };
   }
-  const [dayMin, dayMax] = DUE_DAY_BOUNDS[durationUnit];
-  if (!Number.isInteger(paymentDueDay) || paymentDueDay < dayMin || paymentDueDay > dayMax) {
-    return { error: t.clubs.new.errors.invalidDueDay };
-  }
-  if (!Number.isInteger(payoutDay) || payoutDay < dayMin || payoutDay > dayMax) {
-    return { error: t.clubs.new.errors.invalidPayoutDay };
+  if (!Number.isFinite(lateFeeAmount) || lateFeeAmount < 0) return { error: t.clubs.new.errors.invalidAmount };
+
+  const frequency: Frequency =
+    durationUnit === "WEEK"
+      ? (() => {
+          const raw = String(formData.get("frequency") ?? "WEEKLY") as Frequency;
+          return WEEK_FREQUENCIES.includes(raw) ? raw : "WEEKLY";
+        })()
+      : "MONTHLY";
+
+  let paymentDueDay: number;
+  let payoutDay: number;
+  let startDate: Date | null = null;
+  let startCycleNumber = 1;
+  let currentCycleDueDate: Date | null = null;
+  let currentCyclePayoutDate: Date | null = null;
+
+  if (isPreExisting) {
+    startCycleNumber = Number(formData.get("startCycleNumber"));
+    if (!Number.isInteger(startCycleNumber) || startCycleNumber < 1 || startCycleNumber > durationCount) {
+      return { error: t.clubs.new.errors.invalidStartCycle };
+    }
+    const dueDateRaw = String(formData.get("currentCycleDueDate") ?? "");
+    const payoutDateRaw = String(formData.get("currentCyclePayoutDate") ?? "");
+    currentCycleDueDate = dueDateRaw ? new Date(dueDateRaw) : null;
+    currentCyclePayoutDate = payoutDateRaw ? new Date(payoutDateRaw) : null;
+    if (
+      !currentCycleDueDate ||
+      Number.isNaN(currentCycleDueDate.getTime()) ||
+      !currentCyclePayoutDate ||
+      Number.isNaN(currentCyclePayoutDate.getTime())
+    ) {
+      return { error: t.clubs.new.errors.datesRequired };
+    }
+    paymentDueDay = durationUnit === "WEEK" ? currentCycleDueDate.getDay() : currentCycleDueDate.getDate();
+    payoutDay = durationUnit === "WEEK" ? currentCyclePayoutDate.getDay() : currentCyclePayoutDate.getDate();
+    startDate = subtractCycles(currentCycleDueDate, startCycleNumber - 1, durationUnit, frequency);
+  } else {
+    paymentDueDay = Number(formData.get("paymentDueDay"));
+    payoutDay = Number(formData.get("payoutDay"));
+    const [dayMin, dayMax] = DUE_DAY_BOUNDS[durationUnit];
+    if (!Number.isInteger(paymentDueDay) || paymentDueDay < dayMin || paymentDueDay > dayMax) {
+      return { error: t.clubs.new.errors.invalidDueDay };
+    }
+    if (!Number.isInteger(payoutDay) || payoutDay < dayMin || payoutDay > dayMax) {
+      return { error: t.clubs.new.errors.invalidPayoutDay };
+    }
   }
 
   let inviteCode = generateInviteCode();
@@ -76,12 +119,16 @@ export async function createClubAction(_prevState: ClubFormState, formData: Form
   const club = await prisma.savingsClub.create({
     data: {
       name,
-      monthlyAmount,
+      quotaAmount,
       durationUnit,
       durationCount,
+      frequency,
       paymentDueDay,
       payoutDay,
-      lateFeeAmount: Number.isFinite(lateFeeAmount) && lateFeeAmount >= 0 ? lateFeeAmount : 0,
+      lateFeeAmount,
+      isPreExisting,
+      startCycleNumber,
+      startDate: startDate ?? undefined,
       inviteCode,
       adminId: session.user.id,
       members: {
@@ -89,6 +136,24 @@ export async function createClubAction(_prevState: ClubFormState, formData: Form
       },
     },
   });
+
+  // Pre-existing clubs already know their schedule, so generate cycle rows
+  // immediately instead of waiting for activation (which still requires
+  // turns to be assigned first).
+  if (isPreExisting && startDate && currentCycleDueDate && currentCyclePayoutDate) {
+    const rows = getAllCycleDates({ startDate, durationUnit, durationCount, paymentDueDay, payoutDay, frequency });
+    await prisma.clubCycle.createMany({
+      data: rows.map(({ cycle, dueDate, payoutDate }) => ({
+        clubId: club.id,
+        cycleNumber: cycle,
+        // The formula anchor can drift slightly (e.g. clamped month-end days) — the
+        // leader-entered date for their current cycle always wins over the formula.
+        paymentDueDate: cycle === startCycleNumber ? currentCycleDueDate : dueDate,
+        payoutDate: cycle === startCycleNumber ? currentCyclePayoutDate : payoutDate,
+        isCompleted: cycle < startCycleNumber,
+      })),
+    });
+  }
 
   // Creating a club promotes a plain member to the "Community Leader" tier.
   await prisma.user.updateMany({
@@ -290,6 +355,49 @@ export async function updateClubSettingsAction(
   return {};
 }
 
+export async function updateCycleDatesAction(
+  clubId: string,
+  cycleNumber: number,
+  newDueDateISO: string,
+  newPayoutDateISO: string
+): Promise<ClubFormState> {
+  const locale = await getLocale();
+  const t = getDictionary(locale);
+  const session = await auth();
+  if (!session?.user) return { error: t.auth.mustBeSignedIn };
+
+  const club = await prisma.savingsClub.findUnique({ where: { id: clubId } });
+  if (!club) return { error: t.clubs.detail.errors.clubNotFound };
+  if (club.adminId !== session.user.id) return { error: t.clubs.detail.errors.adminOnly };
+
+  const cycle = await prisma.clubCycle.findUnique({ where: { clubId_cycleNumber: { clubId, cycleNumber } } });
+  if (!cycle) return { error: t.clubs.detail.errors.clubNotFound };
+
+  const newDueDate = new Date(newDueDateISO);
+  const newPayoutDate = new Date(newPayoutDateISO);
+  if (Number.isNaN(newDueDate.getTime()) || Number.isNaN(newPayoutDate.getTime())) {
+    return { error: t.clubs.new.errors.datesRequired };
+  }
+
+  await prisma.clubCycle.update({
+    where: { clubId_cycleNumber: { clubId, cycleNumber } },
+    data: { paymentDueDate: newDueDate, payoutDate: newPayoutDate },
+  });
+
+  await postAuditAnnouncement(
+    clubId,
+    session.user.id,
+    t.clubs.admin.auditCycleDateChangedTitle,
+    interpolate(t.clubs.admin.auditCycleDateChangedBody, {
+      cycle: cycleNumber,
+      dueDate: formatDate(newDueDate, locale),
+      payoutDate: formatDate(newPayoutDate, locale),
+    })
+  );
+
+  return {};
+}
+
 export async function randomizeTurnsAction(clubId: string): Promise<ClubFormState> {
   const t = getDictionary(await getLocale());
   const session = await auth();
@@ -321,7 +429,7 @@ export async function activateClubAction(clubId: string): Promise<ClubFormState>
 
   const club = await prisma.savingsClub.findUnique({
     where: { id: clubId },
-    include: { members: true },
+    include: { members: true, cycles: true },
   });
   if (!club) return { error: t.clubs.detail.errors.clubNotFound };
   if (club.adminId !== session.user.id) return { error: t.clubs.detail.errors.adminOnly };
@@ -330,10 +438,58 @@ export async function activateClubAction(clubId: string): Promise<ClubFormState>
     return { error: t.clubs.detail.errors.turnsNotAssigned };
   }
 
-  await prisma.savingsClub.update({
-    where: { id: club.id },
-    data: { status: "ACTIVE", startDate: new Date() },
-  });
+  // Pre-existing clubs already generated their cycle rows at creation time
+  // (dates chosen by the leader); brand-new clubs anchor cycle 1 to today.
+  if (club.cycles.length === 0) {
+    const startDate = new Date();
+    const rows = getAllCycleDates({
+      startDate,
+      durationUnit: club.durationUnit,
+      durationCount: club.durationCount,
+      paymentDueDay: club.paymentDueDay,
+      payoutDay: club.payoutDay,
+      frequency: club.frequency,
+    });
+    await prisma.$transaction([
+      prisma.savingsClub.update({ where: { id: club.id }, data: { status: "ACTIVE", startDate } }),
+      prisma.clubCycle.createMany({
+        data: rows.map(({ cycle, dueDate, payoutDate }) => ({
+          clubId: club.id,
+          cycleNumber: cycle,
+          paymentDueDate: dueDate,
+          payoutDate,
+        })),
+      }),
+    ]);
+  } else {
+    await prisma.savingsClub.update({ where: { id: club.id }, data: { status: "ACTIVE" } });
+
+    // Pre-existing/imported clubs already have cycles marked completed for the
+    // rounds that happened before the group joined the app — backfill approved
+    // payment records for every current member so their history shows as paid
+    // instead of blank.
+    if (club.isPreExisting) {
+      const completedCycles = club.cycles.filter((c) => c.isCompleted);
+      if (completedCycles.length > 0) {
+        await prisma.paymentReport.createMany({
+          data: completedCycles.flatMap((cycle) =>
+            club.members.map((member) => ({
+              clubId: club.id,
+              userId: member.userId,
+              amount: club.quotaAmount,
+              paymentDate: cycle.paymentDueDate,
+              method: "OTHER" as PaymentMethod,
+              referenceNote: t.clubs.detail.backfilledNote,
+              status: "APPROVED" as const,
+              approvedAt: new Date(),
+              approvedById: session.user.id,
+              notes: t.clubs.detail.backfilledNote,
+            }))
+          ),
+        });
+      }
+    }
+  }
 
   return {};
 }
@@ -389,25 +545,77 @@ export async function submitPaymentReportAction(
 export async function reviewPaymentReportAction(
   clubId: string,
   reportId: string,
-  decision: "APPROVED" | "REJECTED"
+  decision: "APPROVED" | "REJECTED",
+  notes?: string
 ): Promise<ClubFormState> {
   const t = getDictionary(await getLocale());
   const session = await auth();
   if (!session?.user) return { error: t.auth.mustBeSignedIn };
 
-  const club = await prisma.savingsClub.findUnique({ where: { id: clubId } });
+  const club = await prisma.savingsClub.findUnique({ where: { id: clubId }, include: { cycles: true } });
   if (!club) return { error: t.clubs.detail.errors.clubNotFound };
   if (club.adminId !== session.user.id) return { error: t.clubs.detail.errors.adminOnly };
 
   const report = await prisma.paymentReport.findUnique({ where: { id: reportId } });
   if (!report || report.clubId !== clubId) return { error: t.clubs.detail.errors.clubNotFound };
 
-  await prisma.paymentReport.update({ where: { id: reportId }, data: { status: decision } });
+  await prisma.paymentReport.update({
+    where: { id: reportId },
+    data: {
+      status: decision,
+      notes: notes?.trim() || null,
+      approvedAt: decision === "APPROVED" ? new Date() : null,
+      approvedById: decision === "APPROVED" ? session.user.id : null,
+    },
+  });
 
   // Only count toward punctuality the first time a report is approved.
   if (decision === "APPROVED" && report.status === "PENDING") {
-    await recordPaymentApproval(report.userId, isPaymentOnTime(club, report));
+    await recordPaymentApproval(report.userId, isPaymentOnTime(club.durationUnit, club.frequency, club.cycles, report));
   }
+
+  return {};
+}
+
+/** Admin-recorded payment (e.g. cash handed over in person) — created already approved. */
+export async function recordManualPaymentAction(
+  clubId: string,
+  memberUserId: string,
+  _prevState: PaymentReportFormState,
+  formData: FormData
+): Promise<PaymentReportFormState> {
+  const t = getDictionary(await getLocale());
+  const session = await auth();
+  if (!session?.user) return { error: t.auth.mustBeSignedIn };
+
+  const club = await prisma.savingsClub.findUnique({ where: { id: clubId }, include: { members: true, cycles: true } });
+  if (!club) return { error: t.clubs.detail.errors.clubNotFound };
+  if (club.adminId !== session.user.id) return { error: t.clubs.detail.errors.adminOnly };
+  if (!club.members.some((m) => m.userId === memberUserId)) return { error: t.clubs.detail.errors.clubNotFound };
+
+  const amount = Number(formData.get("amount"));
+  const method = String(formData.get("method") ?? "CASH") as PaymentMethod;
+  const notes = String(formData.get("notes") ?? "").trim() || null;
+
+  if (!Number.isFinite(amount) || amount <= 0) return { error: t.clubs.pay.errors.invalidAmount };
+  if (!ALLOWED_METHODS.includes(method)) return { error: t.clubs.pay.errors.methodRequired };
+
+  const paymentDate = new Date();
+  await prisma.paymentReport.create({
+    data: {
+      clubId,
+      userId: memberUserId,
+      amount,
+      paymentDate,
+      method,
+      status: "APPROVED",
+      approvedAt: paymentDate,
+      approvedById: session.user.id,
+      notes,
+    },
+  });
+
+  await recordPaymentApproval(memberUserId, isPaymentOnTime(club.durationUnit, club.frequency, club.cycles, { paymentDate }));
 
   return {};
 }
@@ -419,19 +627,88 @@ export async function completeClubAction(clubId: string): Promise<ClubFormState>
 
   const club = await prisma.savingsClub.findUnique({
     where: { id: clubId },
-    include: { members: true },
+    include: { members: true, cycles: true },
   });
   if (!club) return { error: t.clubs.detail.errors.clubNotFound };
   if (club.adminId !== session.user.id) return { error: t.clubs.detail.errors.adminOnly };
   if (club.status !== "ACTIVE") return { error: t.clubs.admin.errors.notActive };
 
-  const currentCycle = club.startDate ? getCurrentCycle(club.startDate, club.durationUnit, club.durationCount) : 0;
+  const currentCycle = club.cycles.length > 0 ? getCurrentCycleFromRows(club.cycles) : 0;
   if (currentCycle < club.durationCount) {
     return { error: t.clubs.admin.errors.notReadyToComplete };
   }
 
   await prisma.savingsClub.update({ where: { id: clubId }, data: { status: "COMPLETED" } });
   await recordClubCompletion(club.members.map((m) => m.userId));
+
+  return {};
+}
+
+export async function pauseClubAction(clubId: string): Promise<ClubFormState> {
+  const t = getDictionary(await getLocale());
+  const session = await auth();
+  if (!session?.user) return { error: t.auth.mustBeSignedIn };
+
+  const club = await prisma.savingsClub.findUnique({ where: { id: clubId } });
+  if (!club) return { error: t.clubs.detail.errors.clubNotFound };
+  if (club.adminId !== session.user.id) return { error: t.clubs.detail.errors.adminOnly };
+  if (club.status !== "ACTIVE") return { error: t.clubs.admin.errors.notActive };
+
+  await prisma.savingsClub.update({ where: { id: clubId }, data: { status: "PAUSED" } });
+  await postAuditAnnouncement(clubId, session.user.id, t.clubs.admin.auditPausedTitle, t.clubs.admin.auditPausedBody);
+
+  return {};
+}
+
+export async function resumeClubAction(clubId: string): Promise<ClubFormState> {
+  const t = getDictionary(await getLocale());
+  const session = await auth();
+  if (!session?.user) return { error: t.auth.mustBeSignedIn };
+
+  const club = await prisma.savingsClub.findUnique({ where: { id: clubId } });
+  if (!club) return { error: t.clubs.detail.errors.clubNotFound };
+  if (club.adminId !== session.user.id) return { error: t.clubs.detail.errors.adminOnly };
+  if (club.status !== "PAUSED") return { error: t.clubs.admin.errors.notPaused };
+
+  await prisma.savingsClub.update({ where: { id: clubId }, data: { status: "ACTIVE" } });
+  await postAuditAnnouncement(clubId, session.user.id, t.clubs.admin.auditResumedTitle, t.clubs.admin.auditResumedBody);
+
+  return {};
+}
+
+/**
+ * "Start New Round": bumps roundNumber, wipes the old cycle schedule and turn
+ * assignments, and drops the club back to PENDING so the admin re-assigns
+ * turns and re-activates through the normal flow. Members stay joined, and
+ * every past PaymentReport is left untouched as permanent round history.
+ */
+export async function reactivateClubAction(clubId: string): Promise<ClubFormState> {
+  const t = getDictionary(await getLocale());
+  const session = await auth();
+  if (!session?.user) return { error: t.auth.mustBeSignedIn };
+
+  const club = await prisma.savingsClub.findUnique({ where: { id: clubId } });
+  if (!club) return { error: t.clubs.detail.errors.clubNotFound };
+  if (club.adminId !== session.user.id) return { error: t.clubs.detail.errors.adminOnly };
+  if (club.status !== "COMPLETED" && club.status !== "PAUSED") {
+    return { error: t.clubs.admin.errors.notReadyToReactivate };
+  }
+
+  await prisma.$transaction([
+    prisma.clubCycle.deleteMany({ where: { clubId } }),
+    prisma.clubMember.updateMany({ where: { clubId }, data: { payoutTurn: null, payoutPaid: false } }),
+    prisma.savingsClub.update({
+      where: { id: clubId },
+      data: { status: "PENDING", roundNumber: { increment: 1 }, startDate: null },
+    }),
+  ]);
+
+  await postAuditAnnouncement(
+    clubId,
+    session.user.id,
+    t.clubs.admin.auditNewRoundTitle,
+    interpolate(t.clubs.admin.auditNewRoundBody, { round: club.roundNumber + 1 })
+  );
 
   return {};
 }

@@ -7,15 +7,15 @@ import { formatDate, formatUSD } from "@/lib/format";
 import { getDictionary, getLocale } from "@/lib/i18n/locale";
 import { formatClubDuration, interpolate } from "@/lib/i18n/format";
 import type { Dictionary } from "@/lib/i18n/dictionaries";
-import { computeCycleDueDate, getCurrentCycle, isReportForCycle, sumApprovedAmount } from "@/lib/club";
+import { getCurrentCycleFromRows, isReportForCycle, sumApprovedAmount } from "@/lib/club";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
-import { Badge } from "@/components/ui/badge";
+import { ClubStatusBadge } from "@/components/club-status-badge";
 import { UserTrustBadge } from "@/components/user-trust-badge";
-import type { ClubMember, SavingsClub } from "@prisma/client";
+import type { ClubCycle, ClubMember, SavingsClub } from "@prisma/client";
 
-type MembershipWithClub = ClubMember & { club: SavingsClub };
+type MembershipWithClub = ClubMember & { club: SavingsClub & { cycles: ClubCycle[] } };
 
 export default async function DashboardPage() {
   const locale = await getLocale();
@@ -33,7 +33,7 @@ export default async function DashboardPage() {
 
   const memberships = await prisma.clubMember.findMany({
     where: { userId },
-    include: { club: true },
+    include: { club: { include: { cycles: { orderBy: { cycleNumber: "asc" } } } } },
     orderBy: { joinedAt: "desc" },
   });
 
@@ -46,21 +46,17 @@ export default async function DashboardPage() {
   const accumulated = sumApprovedAmount(reports);
 
   const targetTotal = memberships.reduce(
-    (sum, m) => sum + m.club.monthlyAmount * m.club.durationCount,
+    (sum, m) => sum + m.club.quotaAmount * m.club.durationCount,
     0
   );
 
   const progressPct = targetTotal > 0 ? Math.min(100, Math.round((accumulated / targetTotal) * 100)) : 0;
 
   const upcomingDues = memberships
-    .filter((m) => m.club.startDate && m.club.status === "ACTIVE")
+    .filter((m) => m.club.status === "ACTIVE" && m.club.cycles.length > 0)
     .map((m) => {
-      const startDate = m.club.startDate as Date;
-      const cycle = getCurrentCycle(startDate, m.club.durationUnit, m.club.durationCount);
-      const dueDate = computeCycleDueDate(
-        { startDate, durationUnit: m.club.durationUnit, paymentDueDay: m.club.paymentDueDay },
-        cycle
-      );
+      const cycleNumber = getCurrentCycleFromRows(m.club.cycles);
+      const dueDate = m.club.cycles.find((c) => c.cycleNumber === cycleNumber)!.paymentDueDate;
       const alreadyHandled = reports.some(
         (r) => r.clubId === m.clubId && r.status !== "REJECTED" && isReportForCycle(r, dueDate, m.club.durationUnit)
       );
@@ -76,16 +72,20 @@ export default async function DashboardPage() {
 
   return (
     <div className="flex flex-col gap-6">
-      <div className="flex flex-col gap-1">
-        <h1 className="text-2xl font-bold tracking-tight">{t.dashboard.title}</h1>
-        <p className="text-muted-foreground">{interpolate(t.dashboard.welcome, { name: session!.user.name ?? "" })}</p>
-      </div>
+      <Card className="relative overflow-hidden border-none bg-gradient-to-br from-emerald-600 via-teal-700 to-indigo-800 text-white shadow-lg">
+        <div className="pointer-events-none absolute -top-16 -right-16 h-56 w-56 rounded-full bg-white/10 blur-3xl" />
+        <div className="pointer-events-none absolute -bottom-20 -left-10 h-56 w-56 rounded-full bg-emerald-300/10 blur-3xl" />
+        <CardContent className="relative flex flex-col gap-1">
+          <h1 className="text-2xl font-bold tracking-tight text-white">{t.dashboard.title}</h1>
+          <p className="text-white/80">{interpolate(t.dashboard.welcome, { name: session!.user.name ?? "" })}</p>
+        </CardContent>
+      </Card>
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        <Card>
+        <Card className="border-l-4 border-l-emerald-500 shadow-sm transition-all duration-200 hover:shadow-lg">
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-base">
-              <Wallet className="h-4 w-4 text-primary" />
+              <Wallet className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
               {t.dashboard.totalProgress}
             </CardTitle>
             <CardDescription>{t.dashboard.acrossClubs}</CardDescription>
@@ -101,7 +101,7 @@ export default async function DashboardPage() {
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="border-l-4 border-l-amber-500 shadow-sm transition-all duration-200 hover:shadow-lg">
           <CardHeader>
             <CardTitle className="text-base">{t.dashboard.nextAction}</CardTitle>
             <CardDescription>{t.dashboard.upcomingDue}</CardDescription>
@@ -109,7 +109,7 @@ export default async function DashboardPage() {
           <CardContent>
             {nextDue ? (
               <div className="flex flex-col gap-1">
-                <span className="text-2xl font-bold">{formatUSD(nextDue.club.monthlyAmount)}</span>
+                <span className="text-2xl font-bold">{formatUSD(nextDue.club.quotaAmount)}</span>
                 <span className="text-sm text-muted-foreground">
                   {nextDue.club.name} &middot; {formatDate(nextDue.dueDate, locale)}
                 </span>
@@ -183,20 +183,18 @@ function ClubSection({
         <div className="grid gap-3 sm:grid-cols-2">
           {memberships.map((m) => (
             <Link key={m.id} href={`/clubs/${m.clubId}`}>
-              <Card className="transition-colors hover:bg-accent/50">
+              <Card className="border-l-4 border-l-emerald-500/60 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-l-emerald-500 hover:shadow-lg">
                 <CardContent className="flex items-center justify-between py-4">
                   <div className="flex flex-col gap-1">
                     <span className="font-medium">{m.club.name}</span>
                     <span className="text-sm text-muted-foreground">
-                      {interpolate(t.dashboard.perMonth, { amount: formatUSD(m.club.monthlyAmount) })} &middot;{" "}
+                      {interpolate(t.dashboard.perMonth, { amount: formatUSD(m.club.quotaAmount) })} &middot;{" "}
                       {formatClubDuration(t, m.club.durationUnit, m.club.durationCount)} &middot;{" "}
                       {m.payoutTurn ? interpolate(t.dashboard.yourTurn, { turn: m.payoutTurn }) : t.dashboard.turnUnassigned}
                     </span>
                   </div>
                   <div className="flex items-center gap-2">
-                    <Badge variant={m.club.status === "ACTIVE" ? "default" : "secondary"}>
-                      {t.common.clubStatus[m.club.status]}
-                    </Badge>
+                    <ClubStatusBadge status={m.club.status} t={t} />
                     <ArrowRight className="h-4 w-4 text-muted-foreground" />
                   </div>
                 </CardContent>
