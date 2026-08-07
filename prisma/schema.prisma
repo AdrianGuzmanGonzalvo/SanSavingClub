@@ -1,0 +1,164 @@
+// prisma/schema.postgres.prisma.bak holds an alternative version of this
+// schema with exact Decimal(10,2) money fields instead of Float, for a
+// future precision upgrade. Not required for deploy — Float maps cleanly to
+// Postgres double precision and matches the arithmetic already used in app code.
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+enum Role {
+  USER
+  COMMUNITY_LEADER
+  SUPER_ADMIN
+}
+
+enum ClubStatus {
+  PENDING
+  ACTIVE
+  COMPLETED
+  CANCELLED
+}
+
+enum PaymentMethod {
+  ZELLE
+  CASH_APP
+  BANK_TRANSFER
+  CASH
+  OTHER
+}
+
+enum ReportStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum DurationUnit {
+  WEEK
+  MONTH
+}
+
+enum TrustTier {
+  BRONZE
+  SILVER
+  GOLD
+}
+
+model User {
+  id             String          @id @default(uuid())
+  email          String          @unique
+  passwordHash   String?
+  fullName       String
+  phone          String?
+  role           Role            @default(USER)
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+  memberships    ClubMember[]
+  createdClubs   SavingsClub[]   @relation("ClubAdmin")
+  paymentReports PaymentReport[]
+  announcements  Announcement[]
+
+  // Reputation
+  completedClubsCount Int       @default(0)
+  onTimePaymentsCount Int       @default(0)
+  totalPaymentsCount  Int       @default(0)
+  punctualityScore    Float     @default(100)
+  averageRating       Float     @default(5)
+  trustTier           TrustTier @default(BRONZE)
+  ratingsGiven        Rating[]  @relation("RatingAuthor")
+  ratingsReceived     Rating[]  @relation("RatingTarget")
+}
+
+model Rating {
+  id        String   @id @default(uuid())
+  clubId    String
+  authorId  String
+  targetId  String
+  stars     Int // 1-5
+  comment   String?
+  createdAt DateTime @default(now())
+
+  club   SavingsClub @relation(fields: [clubId], references: [id])
+  author User        @relation("RatingAuthor", fields: [authorId], references: [id])
+  target User        @relation("RatingTarget", fields: [targetId], references: [id])
+
+  @@unique([clubId, authorId, targetId])
+}
+
+model SavingsClub {
+  id             String       @id @default(uuid())
+  name           String
+  monthlyAmount  Float
+  durationUnit   DurationUnit @default(MONTH)
+  durationCount  Int // number of weeks or months, per durationUnit
+  inviteCode     String       @unique
+  status         ClubStatus   @default(PENDING)
+  adminId        String
+  admin          User         @relation("ClubAdmin", fields: [adminId], references: [id])
+
+  // Schedule & rule settings
+  startDate       DateTime? // anchors cycle 1 once the admin activates the club
+  // day-of-month (1-31, clamped to short months) when durationUnit=MONTH; day-of-week (0=Sun..6=Sat) when durationUnit=WEEK
+  paymentDueDay   Int
+  payoutDay       Int
+  lateFeeAmount   Float        @default(0)
+  gracePeriodDays Int          @default(0) // days after the due date before a late fee applies
+
+  // Payment instructions shown to members on the report-payment page
+  adminZelleInfo   String?
+  adminCashAppInfo String?
+  adminBankInfo    String?
+
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+  members        ClubMember[]
+  paymentReports PaymentReport[]
+  announcements  Announcement[]
+  ratings        Rating[]
+}
+
+model ClubMember {
+  id         String      @id @default(uuid())
+  clubId     String
+  userId     String
+  payoutTurn Int? // assigned turn number (1 to durationCount); null until the admin assigns it
+  payoutPaid Boolean     @default(false)
+  joinedAt   DateTime    @default(now())
+  club       SavingsClub @relation(fields: [clubId], references: [id])
+  user       User        @relation(fields: [userId], references: [id])
+
+  @@unique([clubId, userId])
+}
+
+model PaymentReport {
+  id            String              @id @default(uuid())
+  clubId        String
+  userId        String
+  amount        Float
+  paymentDate   DateTime
+  method        PaymentMethod
+  referenceNote String? // transaction ID, memo, or confirmation #
+  receiptUrl    String? // image / screenshot data URL
+  status        ReportStatus @default(PENDING)
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+
+  club SavingsClub @relation(fields: [clubId], references: [id])
+  user User        @relation(fields: [userId], references: [id])
+}
+
+model Announcement {
+  id        String      @id @default(uuid())
+  clubId    String
+  authorId  String
+  title     String
+  content   String
+  createdAt DateTime    @default(now())
+  club      SavingsClub @relation(fields: [clubId], references: [id])
+  author    User        @relation(fields: [authorId], references: [id])
+}

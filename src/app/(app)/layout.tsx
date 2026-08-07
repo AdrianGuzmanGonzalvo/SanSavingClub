@@ -1,0 +1,15 @@
+import { redirect } from "next/navigation";
+import { auth } from "@/auth";
+import { AppHeader } from "@/components/app-header";
+
+export default async function AppLayout({ children }: { children: React.ReactNode }) {
+  const session = await auth();
+  if (!session?.user) redirect("/login");
+
+  return (
+    <div className="flex min-h-screen flex-col bg-muted/20">
+      <AppHeader userName={session.user.name ?? "Member"} userEmail={session.user.email ?? ""} />
+      <main className="mx-auto w-full max-w-5xl flex-1 px-6 py-8">{children}</main>
+    </div>
+  );
+}
