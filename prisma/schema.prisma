@@ -130,6 +130,9 @@ model SavingsClub {
   adminCashAppInfo String?
   adminBankInfo    String?
 
+  // Privacy: when false, non-admin members only see their own approved payment history
+  allowMembersToViewOtherPayments Boolean @default(true)
+
   createdAt      DateTime        @default(now())
   updatedAt      DateTime        @updatedAt
   members        ClubMember[]
@@ -144,14 +147,15 @@ model SavingsClub {
 // editable afterward by the admin — dates are never recomputed from a formula
 // once a cycle row exists.
 model ClubCycle {
-  id             String   @id @default(uuid())
+  id             String     @id @default(uuid())
   clubId         String
   cycleNumber    Int
   paymentDueDate DateTime
   payoutDate     DateTime
-  isCompleted    Boolean  @default(false) // true for cycles before a pre-existing club's import point
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
+  cycleFrequency Frequency? // optional informational override when this cycle's cadence differs from the club default
+  isCompleted    Boolean    @default(false) // true for cycles before a pre-existing club's import point
+  createdAt      DateTime   @default(now())
+  updatedAt      DateTime   @updatedAt
 
   club SavingsClub @relation(fields: [clubId], references: [id], onDelete: Cascade)
 

@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { CheckCircle2, ArrowUpDown, CalendarClock, Settings, Megaphone, Users } from "lucide-react";
+import { CheckCircle2, ArrowUpDown, CalendarClock, CalendarRange, Settings, Megaphone, Users } from "lucide-react";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { formatDate, formatUSD } from "@/lib/format";
@@ -19,6 +19,7 @@ import { PaymentApprovalQueue, type PendingReport } from "./payment-queue";
 import { AnnouncementPanel, type AnnouncementItem } from "./announcement-panel";
 import { CompleteClubDialog } from "./complete-club-dialog";
 import { LifecycleControls } from "./lifecycle-controls";
+import { DangerZone } from "./danger-zone";
 
 export default async function ClubAdminPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -125,6 +126,11 @@ export default async function ClubAdminPage({ params }: { params: Promise<{ id: 
           <TabsTrigger value="turns">
             <ArrowUpDown /> {t.clubs.admin.tabs.turns}
           </TabsTrigger>
+          <TabsTrigger value="members-link" asChild>
+            <Link href={`/clubs/${club.id}/admin/members`}>
+              <Users /> {t.clubs.admin.tabs.members}
+            </Link>
+          </TabsTrigger>
           <TabsTrigger value="cycles">
             <CalendarClock /> {t.clubs.admin.tabs.cycles}
           </TabsTrigger>
@@ -141,11 +147,6 @@ export default async function ClubAdminPage({ params }: { params: Promise<{ id: 
         </TabsContent>
 
         <TabsContent value="turns" className="mt-4 flex flex-col gap-4">
-          <Button variant="outline" size="sm" className="self-end" asChild>
-            <Link href={`/clubs/${club.id}/admin/members`}>
-              <Users /> {t.clubs.admin.membersPageTitle}
-            </Link>
-          </Button>
           <TurnAssignmentSection
             clubId={club.id}
             members={memberRows}
@@ -156,15 +157,21 @@ export default async function ClubAdminPage({ params }: { params: Promise<{ id: 
           <SwapTurnsDialog clubId={club.id} members={memberRows} canEdit={canEdit} />
         </TabsContent>
 
-        <TabsContent value="cycles" className="mt-4">
+        <TabsContent value="cycles" className="mt-4 flex flex-col gap-4">
+          <Button variant="outline" size="sm" className="self-end" asChild>
+            <Link href={`/clubs/${club.id}/admin/schedule`}>
+              <CalendarRange /> {t.clubs.admin.manageSchedule}
+            </Link>
+          </Button>
           <CycleDatesPanel clubId={club.id} cycles={cycleRows} canEdit={canEdit} />
         </TabsContent>
 
-        <TabsContent value="settings" className="mt-4">
+        <TabsContent value="settings" className="mt-4 flex flex-col gap-4">
           <ClubSettingsForm
             clubId={club.id}
             canEdit={canEdit}
             initial={{
+              name: club.name,
               durationUnit: club.durationUnit,
               paymentDueDay: club.paymentDueDay,
               payoutDay: club.payoutDay,
@@ -173,8 +180,10 @@ export default async function ClubAdminPage({ params }: { params: Promise<{ id: 
               adminZelleInfo: club.adminZelleInfo ?? "",
               adminCashAppInfo: club.adminCashAppInfo ?? "",
               adminBankInfo: club.adminBankInfo ?? "",
+              allowMembersToViewOtherPayments: club.allowMembersToViewOtherPayments,
             }}
           />
+          <DangerZone clubId={club.id} canDeactivate={club.status !== "CANCELLED"} />
         </TabsContent>
 
         <TabsContent value="announcements" className="mt-4">

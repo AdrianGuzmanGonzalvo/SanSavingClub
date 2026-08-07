@@ -56,8 +56,10 @@ export default async function ClubDetailPage({ params }: { params: Promise<{ id:
   const payoutDate = currentCycleRow?.payoutDate ?? null;
   const poolTotal = club.quotaAmount * club.members.length;
 
+  const canViewAllPayments = club.allowMembersToViewOtherPayments || isAdmin;
+
   const paymentHistoryEntries: PaymentHistoryEntry[] = club.paymentReports
-    .filter((r) => r.status === "APPROVED")
+    .filter((r) => r.status === "APPROVED" && (canViewAllPayments || r.userId === currentUserId))
     .slice()
     .sort((a, b) => (b.approvedAt?.getTime() ?? 0) - (a.approvedAt?.getTime() ?? 0))
     .map((r) => {
@@ -143,7 +145,7 @@ export default async function ClubDetailPage({ params }: { params: Promise<{ id:
         )}
       </Card>
 
-      {currentCycle && payoutDate && (
+      {currentCycle && payoutDate && cycleDueDate && (
         <Card className="border-l-4 border-l-emerald-500 bg-emerald-50/50 shadow-sm transition-all duration-200 hover:shadow-lg dark:bg-emerald-950/20">
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-base">
@@ -151,25 +153,35 @@ export default async function ClubDetailPage({ params }: { params: Promise<{ id:
               {t.clubs.detail.thisMonthsPayout}
             </CardTitle>
           </CardHeader>
-          <CardContent className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            {payoutMember ? (
-              <div className="flex items-center gap-3">
-                <Avatar>
-                  <AvatarFallback>{initials(payoutMember.user.fullName)}</AvatarFallback>
-                </Avatar>
-                <div>
-                  <p className="font-medium">{payoutMember.user.fullName}</p>
-                  <p className="text-sm text-muted-foreground">
-                    {interpolate(t.clubs.detail.poolAndDate, {
-                      pool: formatUSD(poolTotal),
-                      date: formatDate(payoutDate, locale),
-                    })}
-                  </p>
+          <CardContent className="flex flex-col gap-4">
+            <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
+              <span className="text-sm font-medium">
+                {interpolate(t.clubs.detail.dueBanner, { date: formatDate(cycleDueDate, locale) })}
+              </span>
+              <span className="text-sm font-medium">
+                {interpolate(t.clubs.detail.payoutBannerTurn, { turn: currentCycle, date: formatDate(payoutDate, locale) })}
+              </span>
+            </div>
+            <div className="flex items-center justify-between gap-3 border-t pt-3">
+              {payoutMember ? (
+                <div className="flex items-center gap-3">
+                  <Avatar>
+                    <AvatarFallback>{initials(payoutMember.user.fullName)}</AvatarFallback>
+                  </Avatar>
+                  <div>
+                    <p className="font-medium">{payoutMember.user.fullName}</p>
+                    <p className="text-sm text-muted-foreground">
+                      {interpolate(t.clubs.detail.poolAndDate, {
+                        pool: formatUSD(poolTotal),
+                        date: formatDate(payoutDate, locale),
+                      })}
+                    </p>
+                  </div>
                 </div>
-              </div>
-            ) : (
-              <p className="text-sm text-muted-foreground">{t.clubs.detail.payoutRecipientUnassigned}</p>
-            )}
+              ) : (
+                <p className="text-sm text-muted-foreground">{t.clubs.detail.payoutRecipientUnassigned}</p>
+              )}
+            </div>
           </CardContent>
         </Card>
       )}
@@ -286,7 +298,7 @@ export default async function ClubDetailPage({ params }: { params: Promise<{ id:
         </CardContent>
       </Card>
 
-      <PaymentHistoryCard entries={paymentHistoryEntries} />
+      <PaymentHistoryCard entries={paymentHistoryEntries} restricted={!canViewAllPayments} />
     </div>
   );
 }

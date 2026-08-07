@@ -1,6 +1,7 @@
 "use server";
 
 import { redirect } from "next/navigation";
+import { revalidatePath } from "next/cache";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { generateInviteCode, getAllCycleDates, getCurrentCycleFromRows, subtractCycles } from "@/lib/club";
@@ -313,6 +314,7 @@ export async function updateClubSettingsAction(
     return { error: t.clubs.admin.errors.notEditable };
   }
 
+  const name = String(formData.get("name") ?? "").trim();
   const paymentDueDay = Number(formData.get("paymentDueDay"));
   const payoutDay = Number(formData.get("payoutDay"));
   const lateFeeAmount = Number(formData.get("lateFeeAmount") || 0);
@@ -320,7 +322,9 @@ export async function updateClubSettingsAction(
   const adminZelleInfo = String(formData.get("adminZelleInfo") ?? "").trim() || null;
   const adminCashAppInfo = String(formData.get("adminCashAppInfo") ?? "").trim() || null;
   const adminBankInfo = String(formData.get("adminBankInfo") ?? "").trim() || null;
+  const allowMembersToViewOtherPayments = String(formData.get("allowMembersToViewOtherPayments")) === "true";
 
+  if (!name) return { error: t.clubs.new.errors.nameRequired };
   const [dayMin, dayMax] = DUE_DAY_BOUNDS[club.durationUnit];
   if (!Number.isInteger(paymentDueDay) || paymentDueDay < dayMin || paymentDueDay > dayMax) {
     return { error: t.clubs.new.errors.invalidDueDay };
@@ -337,7 +341,17 @@ export async function updateClubSettingsAction(
 
   await prisma.savingsClub.update({
     where: { id: clubId },
-    data: { paymentDueDay, payoutDay, lateFeeAmount, gracePeriodDays, adminZelleInfo, adminCashAppInfo, adminBankInfo },
+    data: {
+      name,
+      paymentDueDay,
+      payoutDay,
+      lateFeeAmount,
+      gracePeriodDays,
+      adminZelleInfo,
+      adminCashAppInfo,
+      adminBankInfo,
+      allowMembersToViewOtherPayments,
+    },
   });
 
   if (scheduleChanged) {
@@ -351,6 +365,9 @@ export async function updateClubSettingsAction(
       })
     );
   }
+
+  revalidatePath(`/clubs/${clubId}`);
+  revalidatePath(`/clubs/${clubId}/admin`);
 
   return {};
 }
@@ -393,6 +410,55 @@ export async function updateCycleDatesAction(
       dueDate: formatDate(newDueDate, locale),
       payoutDate: formatDate(newPayoutDate, locale),
     })
+  );
+
+  return {};
+}
+
+export interface CycleScheduleUpdate {
+  cycleNumber: number;
+  paymentDueDateISO: string;
+  payoutDateISO: string;
+  cycleFrequency: Frequency | null;
+}
+
+/** Bulk save for the full cycle schedule editor — updates every cycle's dates in one transaction. */
+export async function updateCycleScheduleAction(
+  clubId: string,
+  updates: CycleScheduleUpdate[]
+): Promise<ClubFormState> {
+  const t = getDictionary(await getLocale());
+  const session = await auth();
+  if (!session?.user) return { error: t.auth.mustBeSignedIn };
+
+  const club = await prisma.savingsClub.findUnique({ where: { id: clubId } });
+  if (!club) return { error: t.clubs.detail.errors.clubNotFound };
+  if (club.adminId !== session.user.id) return { error: t.clubs.detail.errors.adminOnly };
+
+  const parsed = updates.map((u) => ({
+    cycleNumber: u.cycleNumber,
+    paymentDueDate: new Date(u.paymentDueDateISO),
+    payoutDate: new Date(u.payoutDateISO),
+    cycleFrequency: u.cycleFrequency,
+  }));
+  if (parsed.some((u) => Number.isNaN(u.paymentDueDate.getTime()) || Number.isNaN(u.payoutDate.getTime()))) {
+    return { error: t.clubs.new.errors.datesRequired };
+  }
+
+  await prisma.$transaction(
+    parsed.map((u) =>
+      prisma.clubCycle.update({
+        where: { clubId_cycleNumber: { clubId, cycleNumber: u.cycleNumber } },
+        data: { paymentDueDate: u.paymentDueDate, payoutDate: u.payoutDate, cycleFrequency: u.cycleFrequency },
+      })
+    )
+  );
+
+  await postAuditAnnouncement(
+    clubId,
+    session.user.id,
+    t.clubs.admin.auditScheduleBulkChangedTitle,
+    t.clubs.admin.auditScheduleBulkChangedBody
   );
 
   return {};
@@ -640,6 +706,27 @@ export async function completeClubAction(clubId: string): Promise<ClubFormState>
 
   await prisma.savingsClub.update({ where: { id: clubId }, data: { status: "COMPLETED" } });
   await recordClubCompletion(club.members.map((m) => m.userId));
+
+  return {};
+}
+
+/**
+ * Soft-deletes a club: marks it CANCELLED so it disappears from every
+ * member's dashboard, without touching payment history, ratings, or any
+ * other record — a real delete would destroy real financial history.
+ */
+export async function cancelClubAction(clubId: string): Promise<ClubFormState> {
+  const t = getDictionary(await getLocale());
+  const session = await auth();
+  if (!session?.user) return { error: t.auth.mustBeSignedIn };
+
+  const club = await prisma.savingsClub.findUnique({ where: { id: clubId } });
+  if (!club) return { error: t.clubs.detail.errors.clubNotFound };
+  if (club.adminId !== session.user.id) return { error: t.clubs.detail.errors.adminOnly };
+  if (club.status === "CANCELLED") return { error: t.clubs.admin.errors.notActive };
+
+  await prisma.savingsClub.update({ where: { id: clubId }, data: { status: "CANCELLED" } });
+  await postAuditAnnouncement(clubId, session.user.id, t.clubs.admin.auditDeactivatedTitle, t.clubs.admin.auditDeactivatedBody);
 
   return {};
 }

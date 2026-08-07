@@ -32,7 +32,7 @@ export default async function DashboardPage() {
   if (!currentUser) redirect("/login");
 
   const memberships = await prisma.clubMember.findMany({
-    where: { userId },
+    where: { userId, club: { status: { not: "CANCELLED" } } },
     include: { club: { include: { cycles: { orderBy: { cycleNumber: "asc" } } } } },
     orderBy: { joinedAt: "desc" },
   });
@@ -142,12 +142,14 @@ export default async function DashboardPage() {
         </Button>
       </div>
 
-      <ClubSection
-        title={t.dashboard.clubsYouManage}
-        emptyMessage={t.dashboard.noManagedClubs}
-        memberships={managedClubs}
-        t={t}
-      />
+      {managedClubs.length > 0 && (
+        <ClubSection
+          title={t.dashboard.clubsYouManage}
+          emptyMessage={t.dashboard.noManagedClubs}
+          memberships={managedClubs}
+          t={t}
+        />
+      )}
       <ClubSection
         title={t.dashboard.clubsYouveJoined}
         emptyMessage={t.dashboard.noJoinedClubs}

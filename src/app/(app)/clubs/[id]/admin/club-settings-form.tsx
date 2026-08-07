@@ -3,10 +3,11 @@
 import { useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { CreditCard, Landmark, Loader2, Save, ShieldAlert, Smartphone } from "lucide-react";
+import { CreditCard, Eye, Landmark, Loader2, Save, ShieldAlert, Smartphone } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
@@ -24,6 +25,7 @@ import { updateClubSettingsAction } from "../../actions";
 import type { DurationUnit } from "@prisma/client";
 
 export interface ClubSettingsValues {
+  name: string;
   durationUnit: DurationUnit;
   paymentDueDay: number;
   payoutDay: number;
@@ -32,6 +34,7 @@ export interface ClubSettingsValues {
   adminZelleInfo: string;
   adminCashAppInfo: string;
   adminBankInfo: string;
+  allowMembersToViewOtherPayments: boolean;
 }
 
 export function ClubSettingsForm({
@@ -53,6 +56,7 @@ export function ClubSettingsForm({
 
   const [paymentDueDay, setPaymentDueDay] = useState(String(initial.paymentDueDay));
   const [payoutDay, setPayoutDay] = useState(String(initial.payoutDay));
+  const [allowViewOthers, setAllowViewOthers] = useState(initial.allowMembersToViewOtherPayments);
 
   const dayBounds = initial.durationUnit === "WEEK" ? { min: 0, max: 6 } : { min: 1, max: 31 };
 
@@ -102,6 +106,11 @@ export function ClubSettingsForm({
         </CardHeader>
         <CardContent>
           <form ref={formRef} onSubmit={handleSubmit} className="flex flex-col gap-4">
+            <div className="flex flex-col gap-2">
+              <Label htmlFor="name">{t.clubs.new.name}</Label>
+              <Input id="name" name="name" defaultValue={initial.name} disabled={!canEdit} required />
+            </div>
+
             <div className="grid grid-cols-2 gap-4">
               <div className="flex flex-col gap-2">
                 <Label htmlFor="paymentDueDay">{t.clubs.new.paymentDueDay}</Label>
@@ -224,6 +233,27 @@ export function ClubSettingsForm({
                   <Landmark className="h-3.5 w-3.5" /> {t.clubs.admin.bankLabel}
                 </Label>
                 <Input id="adminBankInfo" name="adminBankInfo" defaultValue={initial.adminBankInfo} disabled={!canEdit} />
+              </div>
+            </div>
+
+            <div className="flex flex-col gap-3 border-t pt-4">
+              <div>
+                <p className="flex items-center gap-1.5 text-sm font-medium">
+                  <Eye className="h-3.5 w-3.5" /> {t.clubs.admin.privacyTitle}
+                </p>
+              </div>
+              <input type="hidden" name="allowMembersToViewOtherPayments" value={allowViewOthers ? "true" : "false"} />
+              <div className="flex items-center justify-between gap-3 rounded-md border p-3">
+                <div className="flex flex-col gap-0.5">
+                  <Label htmlFor="allowMembersToViewOtherPayments">{t.clubs.admin.allowViewOtherPaymentsLabel}</Label>
+                  <p className="text-xs text-muted-foreground">{t.clubs.admin.allowViewOtherPaymentsHint}</p>
+                </div>
+                <Switch
+                  id="allowMembersToViewOtherPayments"
+                  checked={allowViewOthers}
+                  onCheckedChange={setAllowViewOthers}
+                  disabled={!canEdit}
+                />
               </div>
             </div>
 

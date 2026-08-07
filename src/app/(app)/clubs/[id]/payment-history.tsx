@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { Eye, ScrollText } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -18,7 +18,7 @@ export interface PaymentHistoryEntry {
   receiptUrl: string | null;
 }
 
-export function PaymentHistoryCard({ entries }: { entries: PaymentHistoryEntry[] }) {
+export function PaymentHistoryCard({ entries, restricted = false }: { entries: PaymentHistoryEntry[]; restricted?: boolean }) {
   const { dict: t } = useI18n();
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
 
@@ -29,6 +29,7 @@ export function PaymentHistoryCard({ entries }: { entries: PaymentHistoryEntry[]
           <ScrollText className="h-4 w-4 text-primary" />
           {t.clubs.detail.paymentHistoryTitle}
         </CardTitle>
+        {restricted && <CardDescription>{t.clubs.detail.paymentHistoryRestrictedNote}</CardDescription>}
       </CardHeader>
       <CardContent>
         {entries.length === 0 ? (
