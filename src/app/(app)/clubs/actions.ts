@@ -53,6 +53,7 @@ export async function createClubAction(_prevState: ClubFormState, formData: Form
   const lateFeeAmount = Number(formData.get("lateFeeAmount") || 0);
   const mode = String(formData.get("mode") ?? "new");
   const isPreExisting = mode === "existing";
+  const adminParticipates = String(formData.get("adminParticipates") ?? "true") !== "false";
 
   if (!name) return { error: t.clubs.new.errors.nameRequired };
   if (!Number.isFinite(quotaAmount) || quotaAmount <= 0) return { error: t.clubs.new.errors.invalidAmount };
@@ -132,9 +133,9 @@ export async function createClubAction(_prevState: ClubFormState, formData: Form
       startDate: startDate ?? undefined,
       inviteCode,
       adminId: session.user.id,
-      members: {
-        create: { userId: session.user.id, payoutTurn: null },
-      },
+      ...(adminParticipates
+        ? { members: { create: { userId: session.user.id, payoutTurn: null } } }
+        : {}),
     },
   });
 

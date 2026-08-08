@@ -13,9 +13,10 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Progress } from "@/components/ui/progress";
 import { ClubStatusBadge } from "@/components/club-status-badge";
 import { UserTrustBadge } from "@/components/user-trust-badge";
-import type { ClubCycle, ClubMember, SavingsClub } from "@prisma/client";
+import type { ClubCycle, SavingsClub } from "@prisma/client";
 
-type MembershipWithClub = ClubMember & { club: SavingsClub & { cycles: ClubCycle[] } };
+type ClubWithCycles = SavingsClub & { cycles: ClubCycle[] };
+type ClubCard = { clubId: string; club: ClubWithCycles; payoutTurn: number | null; isParticipant: boolean };
 
 export default async function DashboardPage() {
   const locale = await getLocale();
@@ -35,6 +36,15 @@ export default async function DashboardPage() {
     where: { userId, club: { status: { not: "CANCELLED" } } },
     include: { club: { include: { cycles: { orderBy: { cycleNumber: "asc" } } } } },
     orderBy: { joinedAt: "desc" },
+  });
+
+  // A club's admin isn't necessarily a participant (e.g. someone who only
+  // organizes the club) — those clubs have no ClubMember row for them, so
+  // they need a separate query to still show up under "clubs you manage".
+  const adminOnlyClubs = await prisma.savingsClub.findMany({
+    where: { adminId: userId, status: { not: "CANCELLED" }, members: { none: { userId } } },
+    include: { cycles: { orderBy: { cycleNumber: "asc" } } },
+    orderBy: { createdAt: "desc" },
   });
 
   const clubIds = memberships.map((m) => m.clubId);
@@ -67,8 +77,15 @@ export default async function DashboardPage() {
 
   const nextDue = upcomingDues[0];
 
-  const managedClubs = memberships.filter((m) => m.club.adminId === userId);
-  const joinedClubs = memberships.filter((m) => m.club.adminId !== userId);
+  const managedClubs: ClubCard[] = [
+    ...memberships
+      .filter((m) => m.club.adminId === userId)
+      .map((m) => ({ clubId: m.clubId, club: m.club, payoutTurn: m.payoutTurn, isParticipant: true })),
+    ...adminOnlyClubs.map((club) => ({ clubId: club.id, club, payoutTurn: null, isParticipant: false })),
+  ];
+  const joinedClubs: ClubCard[] = memberships
+    .filter((m) => m.club.adminId !== userId)
+    .map((m) => ({ clubId: m.clubId, club: m.club, payoutTurn: m.payoutTurn, isParticipant: true }));
 
   return (
     <div className="flex flex-col gap-6">
@@ -81,7 +98,44 @@ export default async function DashboardPage() {
         </CardContent>
       </Card>
 
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+      <div className="flex w-full max-w-xs flex-col gap-2">
+        <span className="text-sm font-medium">{t.reputation.yourReputation}</span>
+        <UserTrustBadge variant="full" stats={currentUser} />
+      </div>
+
+      <div className="flex flex-col gap-3">
+        <div className="flex flex-col gap-3 sm:flex-row">
+          <Button asChild>
+            <Link href="/clubs/new">
+              <Plus /> {t.dashboard.createClub}
+            </Link>
+          </Button>
+          <Button variant="outline" asChild>
+            <Link href="/clubs/join">
+              <Link2 /> {t.dashboard.joinCode}
+            </Link>
+          </Button>
+        </div>
+
+        {managedClubs.length > 0 && (
+          <ClubSection
+            title={t.dashboard.clubsYouManage}
+            emptyMessage={t.dashboard.noManagedClubs}
+            clubs={managedClubs}
+            t={t}
+          />
+        )}
+        {joinedClubs.length > 0 && (
+          <ClubSection
+            title={t.dashboard.clubsYouveJoined}
+            emptyMessage={t.dashboard.noJoinedClubs}
+            clubs={joinedClubs}
+            t={t}
+          />
+        )}
+      </div>
+
+      <div className="grid gap-4 sm:grid-cols-2">
         <Card className="border-l-4 border-l-emerald-500 shadow-sm transition-all duration-200 hover:shadow-lg">
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-base">
@@ -122,40 +176,7 @@ export default async function DashboardPage() {
             )}
           </CardContent>
         </Card>
-
-        <div className="flex flex-col gap-1">
-          <span className="text-sm font-medium">{t.reputation.yourReputation}</span>
-          <UserTrustBadge variant="full" stats={currentUser} />
-        </div>
       </div>
-
-      <div className="flex flex-col gap-3 sm:flex-row">
-        <Button asChild>
-          <Link href="/clubs/new">
-            <Plus /> {t.dashboard.createClub}
-          </Link>
-        </Button>
-        <Button variant="outline" asChild>
-          <Link href="/clubs/join">
-            <Link2 /> {t.dashboard.joinCode}
-          </Link>
-        </Button>
-      </div>
-
-      {managedClubs.length > 0 && (
-        <ClubSection
-          title={t.dashboard.clubsYouManage}
-          emptyMessage={t.dashboard.noManagedClubs}
-          memberships={managedClubs}
-          t={t}
-        />
-      )}
-      <ClubSection
-        title={t.dashboard.clubsYouveJoined}
-        emptyMessage={t.dashboard.noJoinedClubs}
-        memberships={joinedClubs}
-        t={t}
-      />
     </div>
   );
 }
@@ -163,18 +184,18 @@ export default async function DashboardPage() {
 function ClubSection({
   title,
   emptyMessage,
-  memberships,
+  clubs,
   t,
 }: {
   title: string;
   emptyMessage: string;
-  memberships: MembershipWithClub[];
+  clubs: ClubCard[];
   t: Dictionary;
 }) {
   return (
     <div className="flex flex-col gap-3">
       <h2 className="text-lg font-semibold">{title}</h2>
-      {memberships.length === 0 ? (
+      {clubs.length === 0 ? (
         <Card>
           <CardContent className="flex flex-col items-center gap-2 py-10 text-center text-muted-foreground">
             <Users className="h-6 w-6" />
@@ -183,20 +204,24 @@ function ClubSection({
         </Card>
       ) : (
         <div className="grid gap-3 sm:grid-cols-2">
-          {memberships.map((m) => (
-            <Link key={m.id} href={`/clubs/${m.clubId}`}>
+          {clubs.map((c) => (
+            <Link key={c.clubId} href={`/clubs/${c.clubId}`}>
               <Card className="border-l-4 border-l-emerald-500/60 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-l-emerald-500 hover:shadow-lg">
                 <CardContent className="flex items-center justify-between py-4">
                   <div className="flex flex-col gap-1">
-                    <span className="font-medium">{m.club.name}</span>
+                    <span className="font-medium">{c.club.name}</span>
                     <span className="text-sm text-muted-foreground">
-                      {interpolate(t.dashboard.perMonth, { amount: formatUSD(m.club.quotaAmount) })} &middot;{" "}
-                      {formatClubDuration(t, m.club.durationUnit, m.club.durationCount)} &middot;{" "}
-                      {m.payoutTurn ? interpolate(t.dashboard.yourTurn, { turn: m.payoutTurn }) : t.dashboard.turnUnassigned}
+                      {interpolate(t.dashboard.perMonth, { amount: formatUSD(c.club.quotaAmount) })} &middot;{" "}
+                      {formatClubDuration(t, c.club.durationUnit, c.club.durationCount)} &middot;{" "}
+                      {!c.isParticipant
+                        ? t.dashboard.managingOnly
+                        : c.payoutTurn
+                          ? interpolate(t.dashboard.yourTurn, { turn: c.payoutTurn })
+                          : t.dashboard.turnUnassigned}
                     </span>
                   </div>
                   <div className="flex items-center gap-2">
-                    <ClubStatusBadge status={m.club.status} t={t} />
+                    <ClubStatusBadge status={c.club.status} t={t} />
                     <ArrowRight className="h-4 w-4 text-muted-foreground" />
                   </div>
                 </CardContent>

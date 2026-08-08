@@ -5,7 +5,7 @@ import { usePathname } from "next/navigation";
 import { Bell, LayoutDashboard, User } from "lucide-react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
-import { SanSavingClubLogo } from "@/components/SanSavingClubLogo";
+import { SanClubEmblemLogo } from "@/components/SanClubEmblemLogo";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -41,7 +41,7 @@ export function AppHeader({ userName, userEmail }: { userName: string; userEmail
     <header className="sticky top-0 z-10 border-b border-slate-200/80 bg-white/80 backdrop-blur-md dark:border-slate-800/80 dark:bg-slate-900/70">
       <div className="mx-auto flex max-w-5xl items-center justify-between px-6 py-3">
         <Link href="/dashboard" className="flex items-center gap-2 font-semibold">
-          <SanSavingClubLogo className="h-7 w-7" />
+          <SanClubEmblemLogo className="h-7 w-7" />
           {t.common.appName}
         </Link>
 

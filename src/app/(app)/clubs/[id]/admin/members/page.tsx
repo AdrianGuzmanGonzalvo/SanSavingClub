@@ -28,10 +28,10 @@ export default async function ClubMembersPage({ params }: { params: Promise<{ id
 
   if (!club) notFound();
   const currentUserId = session!.user.id;
-  const isMember = club.members.some((m) => m.userId === currentUserId);
-  if (!isMember) notFound();
-
   const isAdmin = club.adminId === currentUserId;
+  const isParticipant = club.members.some((m) => m.userId === currentUserId);
+  if (!isParticipant && !isAdmin) notFound();
+
   if (!isAdmin) {
     return (
       <div className="flex flex-col gap-6">
@@ -80,7 +80,7 @@ export default async function ClubMembersPage({ params }: { params: Promise<{ id
 
   return (
     <div className="flex flex-col gap-6">
-      <ClubSubNav clubId={club.id} isAdmin={isAdmin} />
+      <ClubSubNav clubId={club.id} isAdmin={isAdmin} isParticipant={isParticipant} />
 
       <div className="flex flex-col gap-1">
         <h1 className="text-2xl font-bold tracking-tight">{t.clubs.admin.membersPageTitle}</h1>

@@ -24,7 +24,8 @@ export default async function ClubCalendarPage({ params }: { params: Promise<{ i
   if (!club) notFound();
   const currentUserId = session!.user.id;
   const isAdmin = club.adminId === currentUserId;
-  if (!club.members.some((m) => m.userId === currentUserId)) notFound();
+  const isParticipant = club.members.some((m) => m.userId === currentUserId);
+  if (!isParticipant && !isAdmin) notFound();
 
   const cycles: CycleInfo[] = club.cycles.map(({ cycleNumber, paymentDueDate, payoutDate }) => {
     const paidMembers: string[] = [];
@@ -58,7 +59,7 @@ export default async function ClubCalendarPage({ params }: { params: Promise<{ i
 
   return (
     <div className="flex flex-col gap-6">
-      <ClubSubNav clubId={club.id} isAdmin={isAdmin} />
+      <ClubSubNav clubId={club.id} isAdmin={isAdmin} isParticipant={isParticipant} />
 
       <div className="flex flex-col gap-1">
         <h1 className="text-2xl font-bold tracking-tight">{t.clubs.calendar.title}</h1>

@@ -43,7 +43,7 @@ export function PaymentHistoryCard({ entries, restricted = false }: { entries: P
               <TableRow>
                 <TableHead>{t.clubs.detail.member}</TableHead>
                 <TableHead>{t.clubs.detail.paymentHistoryCycle}</TableHead>
-                <TableHead>{t.clubs.pay.amount}</TableHead>
+                <TableHead className="text-right">{t.clubs.pay.amount}</TableHead>
                 <TableHead>{t.clubs.detail.paymentHistorySubmitted}</TableHead>
                 <TableHead>{t.clubs.detail.paymentHistoryApproved}</TableHead>
                 <TableHead className="text-right">{t.clubs.admin.viewReceipt}</TableHead>
@@ -54,7 +54,7 @@ export function PaymentHistoryCard({ entries, restricted = false }: { entries: P
                 <TableRow key={entry.id}>
                   <TableCell className="font-medium">{entry.memberName}</TableCell>
                   <TableCell className="text-muted-foreground">{entry.cycleNumber ? `#${entry.cycleNumber}` : "—"}</TableCell>
-                  <TableCell>{entry.amount}</TableCell>
+                  <TableCell className="text-right tabular-nums">{entry.amount}</TableCell>
                   <TableCell className="text-muted-foreground">{entry.submittedOn}</TableCell>
                   <TableCell className="text-muted-foreground">{entry.approvedOn ?? "—"}</TableCell>
                   <TableCell className="text-right">

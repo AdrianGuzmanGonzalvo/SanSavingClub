@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { IconInput } from "@/components/icon-input";
-import { SanSavingClubLogo } from "@/components/SanSavingClubLogo";
+import { SanClubEmblemLogo } from "@/components/SanClubEmblemLogo";
 import { PasswordInput } from "@/components/password-input";
 import { useI18n } from "@/lib/i18n/i18n-provider";
 import { loginAction, type LoginState } from "./actions";
@@ -21,7 +21,7 @@ export function LoginForm({ callbackUrl }: { callbackUrl: string }) {
   return (
     <Card className="w-full max-w-sm">
       <CardHeader className="items-center text-center">
-        <SanSavingClubLogo className="mb-2 h-12 w-12" />
+        <SanClubEmblemLogo className="mb-2 h-12 w-12" />
         <CardTitle>{t.auth.login.title}</CardTitle>
         <CardDescription>{t.auth.login.subtitle}</CardDescription>
       </CardHeader>

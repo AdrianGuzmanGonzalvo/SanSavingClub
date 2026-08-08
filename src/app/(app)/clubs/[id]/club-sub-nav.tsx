@@ -6,7 +6,15 @@ import { CalendarDays, LayoutDashboard, Settings, Wallet } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useI18n } from "@/lib/i18n/i18n-provider";
 
-export function ClubSubNav({ clubId, isAdmin }: { clubId: string; isAdmin: boolean }) {
+export function ClubSubNav({
+  clubId,
+  isAdmin,
+  isParticipant = true,
+}: {
+  clubId: string;
+  isAdmin: boolean;
+  isParticipant?: boolean;
+}) {
   const pathname = usePathname();
   const { dict: t } = useI18n();
 
@@ -14,7 +22,7 @@ export function ClubSubNav({ clubId, isAdmin }: { clubId: string; isAdmin: boole
   const tabs = [
     { href: base, label: t.clubs.nav.overview, icon: LayoutDashboard },
     { href: `${base}/calendar`, label: t.clubs.nav.calendar, icon: CalendarDays },
-    { href: `${base}/pay`, label: t.clubs.nav.pay, icon: Wallet },
+    ...(isParticipant ? [{ href: `${base}/pay`, label: t.clubs.nav.pay, icon: Wallet }] : []),
     ...(isAdmin ? [{ href: `${base}/admin`, label: t.clubs.nav.admin, icon: Settings }] : []),
   ];
 

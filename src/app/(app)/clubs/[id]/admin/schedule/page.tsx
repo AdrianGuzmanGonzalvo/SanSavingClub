@@ -30,10 +30,10 @@ export default async function ClubSchedulePage({ params }: { params: Promise<{ i
 
   if (!club) notFound();
   const currentUserId = session!.user.id;
-  const isMember = club.members.some((m) => m.userId === currentUserId);
-  if (!isMember) notFound();
-
   const isAdmin = club.adminId === currentUserId;
+  const isParticipant = club.members.some((m) => m.userId === currentUserId);
+  if (!isParticipant && !isAdmin) notFound();
+
   if (!isAdmin) {
     return (
       <div className="flex flex-col gap-6">
@@ -61,7 +61,7 @@ export default async function ClubSchedulePage({ params }: { params: Promise<{ i
 
   return (
     <div className="flex flex-col gap-6">
-      <ClubSubNav clubId={club.id} isAdmin={isAdmin} />
+      <ClubSubNav clubId={club.id} isAdmin={isAdmin} isParticipant={isParticipant} />
       <CycleScheduleEditor clubId={club.id} clubName={club.name} rows={rows} potTotal={potTotal} canEdit={canEdit} />
     </div>
   );

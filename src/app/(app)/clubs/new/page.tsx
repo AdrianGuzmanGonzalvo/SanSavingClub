@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Switch } from "@/components/ui/switch";
 import { DatePicker } from "@/components/date-picker";
 import { Loader2, PlusCircle, RefreshCw, Sparkles } from "lucide-react";
 import { useI18n } from "@/lib/i18n/i18n-provider";
@@ -47,6 +48,7 @@ export default function NewClubPage() {
   const [startCycleNumber, setStartCycleNumber] = useState("1");
   const [currentDueDate, setCurrentDueDate] = useState<Date | undefined>(undefined);
   const [currentPayoutDate, setCurrentPayoutDate] = useState<Date | undefined>(undefined);
+  const [adminParticipates, setAdminParticipates] = useState(true);
 
   function handleUnitChange(next: DurationUnit) {
     setUnit(next);
@@ -274,6 +276,15 @@ export default function NewClubPage() {
               <Label htmlFor="lateFeeAmount">{t.clubs.new.lateFeeAmount}</Label>
               <Input id="lateFeeAmount" name="lateFeeAmount" type="number" min="0" step="0.01" defaultValue={0} />
               <p className="text-xs text-muted-foreground">{t.clubs.new.lateFeeHint}</p>
+            </div>
+
+            <input type="hidden" name="adminParticipates" value={adminParticipates ? "true" : "false"} />
+            <div className="flex items-center justify-between gap-3 rounded-lg border p-3">
+              <div className="flex flex-col gap-0.5">
+                <Label htmlFor="adminParticipates">{t.clubs.new.adminParticipatesLabel}</Label>
+                <p className="text-xs text-muted-foreground">{t.clubs.new.adminParticipatesHint}</p>
+              </div>
+              <Switch id="adminParticipates" checked={adminParticipates} onCheckedChange={setAdminParticipates} />
             </div>
 
             {state.error && <p className="text-sm text-destructive">{state.error}</p>}

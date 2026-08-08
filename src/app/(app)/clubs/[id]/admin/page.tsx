@@ -39,10 +39,9 @@ export default async function ClubAdminPage({ params }: { params: Promise<{ id: 
 
   if (!club) notFound();
   const currentUserId = session!.user.id;
-  const isMember = club.members.some((m) => m.userId === currentUserId);
-  if (!isMember) notFound();
-
   const isAdmin = club.adminId === currentUserId;
+  const isParticipant = club.members.some((m) => m.userId === currentUserId);
+  if (!isParticipant && !isAdmin) notFound();
 
   if (!isAdmin) {
     return (
@@ -100,7 +99,7 @@ export default async function ClubAdminPage({ params }: { params: Promise<{ id: 
 
   return (
     <div className="flex flex-col gap-6">
-      <ClubSubNav clubId={club.id} isAdmin={isAdmin} />
+      <ClubSubNav clubId={club.id} isAdmin={isAdmin} isParticipant={isParticipant} />
 
       <div className="flex flex-col items-start justify-between gap-3 sm:flex-row sm:items-center">
         <div className="flex flex-col gap-1">

@@ -7,8 +7,8 @@ import { getDictionary, getLocale } from "@/lib/i18n/locale";
 import { formatClubDuration, formatScheduleDay, interpolate } from "@/lib/i18n/format";
 import { computeMemberStatusForCycle, getCurrentCycleFromRows, isReportForCycle, sumApprovedAmount } from "@/lib/club";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import { ClubStatusBadge } from "@/components/club-status-badge";
 import { InviteCode } from "./invite-code";
@@ -17,7 +17,6 @@ import { MemberStatusBadge } from "./status-badge";
 import { ClubSubNav } from "./club-sub-nav";
 import { ExportButtons } from "./export-buttons";
 import type { PaymentHistoryRow } from "@/lib/export";
-import { UserTrustBadge } from "@/components/user-trust-badge";
 import { PaymentHistoryCard, type PaymentHistoryEntry } from "./payment-history";
 
 function initials(name: string) {
@@ -43,10 +42,9 @@ export default async function ClubDetailPage({ params }: { params: Promise<{ id:
 
   if (!club) notFound();
   const currentUserId = session!.user.id;
-  const isMember = club.members.some((m) => m.userId === currentUserId);
-  if (!isMember) notFound();
-
   const isAdmin = club.adminId === currentUserId;
+  const isParticipant = club.members.some((m) => m.userId === currentUserId);
+  if (!isParticipant && !isAdmin) notFound();
 
   const currentCycle = club.cycles.length > 0 ? getCurrentCycleFromRows(club.cycles) : null;
   const currentCycleRow = currentCycle ? club.cycles.find((c) => c.cycleNumber === currentCycle) : null;
@@ -55,6 +53,13 @@ export default async function ClubDetailPage({ params }: { params: Promise<{ id:
   const payoutMember = currentCycle ? club.members.find((m) => m.payoutTurn === currentCycle) : null;
   const payoutDate = currentCycleRow?.payoutDate ?? null;
   const poolTotal = club.quotaAmount * club.members.length;
+
+  const currentCycleApproved = cycleDueDate
+    ? sumApprovedAmount(
+        club.paymentReports.filter((r) => isReportForCycle(r, cycleDueDate, club.durationUnit, club.frequency))
+      )
+    : 0;
+  const currentCycleProgressPct = poolTotal > 0 ? Math.min(100, Math.round((currentCycleApproved / poolTotal) * 100)) : 0;
 
   const canViewAllPayments = club.allowMembersToViewOtherPayments || isAdmin;
 
@@ -95,40 +100,46 @@ export default async function ClubDetailPage({ params }: { params: Promise<{ id:
 
   return (
     <div className="flex flex-col gap-6">
-      <ClubSubNav clubId={club.id} isAdmin={isAdmin} />
+      <ClubSubNav clubId={club.id} isAdmin={isAdmin} isParticipant={isParticipant} />
 
-      <Card className="relative overflow-hidden border-none bg-gradient-to-br from-emerald-600 via-teal-700 to-indigo-800 text-white shadow-lg">
-        <div className="pointer-events-none absolute -top-16 -right-16 h-56 w-56 rounded-full bg-white/10 blur-3xl" />
-        <div className="pointer-events-none absolute -bottom-20 -left-10 h-56 w-56 rounded-full bg-emerald-300/10 blur-3xl" />
-        <CardHeader className="relative flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-          <div className="flex flex-col gap-1">
-            <CardTitle className="text-2xl text-white">{club.name}</CardTitle>
-            <p className="text-sm text-white/80">
-              {interpolate(t.dashboard.perMonth, { amount: formatUSD(club.quotaAmount) })} &middot;{" "}
-              {formatClubDuration(t, club.durationUnit, club.durationCount)} &middot;{" "}
-              {interpolate(t.clubs.detail.adminLabel, { name: club.admin.fullName })}
-            </p>
-            <p className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-white/80">
-              <span className="flex items-center gap-1">
-                <CalendarClock className="h-3.5 w-3.5" />
-                {interpolate(t.clubs.detail.dueOnDay, { day: formatScheduleDay(t, club.durationUnit, club.paymentDueDay) })}
-              </span>
-              <span className="flex items-center gap-1">
-                <Gift className="h-3.5 w-3.5" />
-                {interpolate(t.clubs.detail.payoutOnDay, { day: formatScheduleDay(t, club.durationUnit, club.payoutDay) })}
-              </span>
-              {club.lateFeeAmount > 0 && (
+      <Card className="shadow-[0_4px_20px_-2px_rgba(5,150,105,0.08)]">
+        <CardHeader className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+          <div className="flex items-start gap-3">
+            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-emerald-500 to-emerald-700 text-sm font-bold text-white shadow-[0_4px_14px_rgba(16,185,129,0.3)]">
+              {initials(club.name)}
+            </div>
+            <div className="flex flex-col gap-1">
+              <CardTitle className="text-xl">{club.name}</CardTitle>
+              <p className="text-sm text-muted-foreground">
+                {interpolate(t.dashboard.perMonth, { amount: formatUSD(club.quotaAmount) })} &middot;{" "}
+                {formatClubDuration(t, club.durationUnit, club.durationCount)} &middot;{" "}
+                {interpolate(t.clubs.detail.adminLabel, { name: club.admin.fullName })}
+              </p>
+              <p className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
                 <span className="flex items-center gap-1">
-                  <AlertTriangle className="h-3.5 w-3.5" />
-                  {t.clubs.new.lateFeeAmount}: {formatUSD(club.lateFeeAmount)}
+                  <CalendarClock className="h-3.5 w-3.5" />
+                  {interpolate(t.clubs.detail.dueOnDay, { day: formatScheduleDay(t, club.durationUnit, club.paymentDueDay) })}
                 </span>
-              )}
-            </p>
+                <span className="flex items-center gap-1">
+                  <Gift className="h-3.5 w-3.5" />
+                  {interpolate(t.clubs.detail.payoutOnDay, { day: formatScheduleDay(t, club.durationUnit, club.payoutDay) })}
+                </span>
+                {club.lateFeeAmount > 0 && (
+                  <span className="flex items-center gap-1">
+                    <AlertTriangle className="h-3.5 w-3.5" />
+                    {t.clubs.new.lateFeeAmount}: {formatUSD(club.lateFeeAmount)}
+                  </span>
+                )}
+              </p>
+            </div>
           </div>
           <div className="flex flex-col items-start gap-2 sm:items-end">
             <div className="flex flex-wrap items-center gap-2">
               {club.isPreExisting && currentCycle && (
-                <Badge variant="outline" className="flex items-center gap-1 border-white/30 bg-white/10 text-white">
+                <Badge
+                  variant="outline"
+                  className="flex items-center gap-1 border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-800 dark:bg-emerald-950 dark:text-emerald-300"
+                >
                   <RefreshCw className="h-3 w-3" />
                   {interpolate(t.clubs.detail.ongoingBadge, { current: currentCycle, total: club.durationCount })}
                 </Badge>
@@ -139,38 +150,74 @@ export default async function ClubDetailPage({ params }: { params: Promise<{ id:
           </div>
         </CardHeader>
         {isAdmin && club.status === "PENDING" && (
-          <CardContent className="relative">
+          <CardContent>
             <ActivateClubButton clubId={club.id} />
           </CardContent>
         )}
       </Card>
 
+      {currentCycle && cycleDueDate && (
+        <div className="grid gap-4 sm:grid-cols-3">
+          <Card>
+            <CardContent className="pt-6">
+              <p className="text-[0.85rem] font-medium text-muted-foreground">
+                {t.clubs.detail.collectedThisCycle}
+              </p>
+              <p className="mt-1 text-[1.65rem] font-bold tabular-nums text-primary">
+                {formatUSD(currentCycleApproved)}
+                <span className="text-base font-normal text-muted-foreground"> / {formatUSD(poolTotal)}</span>
+              </p>
+              <Progress value={currentCycleProgressPct} className="mt-3 h-2" />
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="pt-6">
+              <p className="text-[0.85rem] font-medium text-muted-foreground">{t.clubs.detail.quotaLabel}</p>
+              <p className="mt-1 text-[1.65rem] font-bold tabular-nums">{formatUSD(club.quotaAmount)}</p>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="pt-6">
+              <p className="text-[0.85rem] font-medium text-muted-foreground">{t.clubs.detail.nextCloseLabel}</p>
+              <p className="mt-1 text-xl font-bold">{formatDate(cycleDueDate, locale)}</p>
+            </CardContent>
+          </Card>
+        </div>
+      )}
+
       {currentCycle && payoutDate && cycleDueDate && (
-        <Card className="border-l-4 border-l-emerald-500 bg-emerald-50/50 shadow-sm transition-all duration-200 hover:shadow-lg dark:bg-emerald-950/20">
+        <Card
+          className="border-none text-white shadow-[0_8px_30px_-6px_rgba(4,61,46,0.5)]"
+          style={{ background: "linear-gradient(180deg, #064e3b 0%, #043d2e 100%)" }}
+        >
           <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-base">
-              <Sparkles className="h-4 w-4 text-primary" />
-              {t.clubs.detail.thisMonthsPayout}
+            <CardTitle className="flex items-center gap-2 text-base text-white">
+              <Sparkles className="h-4 w-4 text-emerald-300" />
+              <span className="text-[0.85rem] font-semibold tracking-wide text-emerald-200">
+                {t.clubs.detail.thisMonthsPayout}
+              </span>
             </CardTitle>
           </CardHeader>
           <CardContent className="flex flex-col gap-4">
             <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
-              <span className="text-sm font-medium">
+              <span className="text-sm font-medium text-emerald-100">
                 {interpolate(t.clubs.detail.dueBanner, { date: formatDate(cycleDueDate, locale) })}
               </span>
-              <span className="text-sm font-medium">
+              <span className="text-sm font-medium text-emerald-100">
                 {interpolate(t.clubs.detail.payoutBannerTurn, { turn: currentCycle, date: formatDate(payoutDate, locale) })}
               </span>
             </div>
-            <div className="flex items-center justify-between gap-3 border-t pt-3">
+            <div className="flex items-center justify-between gap-3 border-t border-white/10 pt-3">
               {payoutMember ? (
                 <div className="flex items-center gap-3">
-                  <Avatar>
-                    <AvatarFallback>{initials(payoutMember.user.fullName)}</AvatarFallback>
+                  <Avatar className="h-12 w-12 border border-white/20">
+                    <AvatarFallback className="bg-white/15 text-base font-semibold text-white">
+                      {initials(payoutMember.user.fullName)}
+                    </AvatarFallback>
                   </Avatar>
                   <div>
-                    <p className="font-medium">{payoutMember.user.fullName}</p>
-                    <p className="text-sm text-muted-foreground">
+                    <p className="text-base font-semibold text-white">{payoutMember.user.fullName}</p>
+                    <p className="text-sm text-emerald-100/80">
                       {interpolate(t.clubs.detail.poolAndDate, {
                         pool: formatUSD(poolTotal),
                         date: formatDate(payoutDate, locale),
@@ -179,7 +226,7 @@ export default async function ClubDetailPage({ params }: { params: Promise<{ id:
                   </div>
                 </div>
               ) : (
-                <p className="text-sm text-muted-foreground">{t.clubs.detail.payoutRecipientUnassigned}</p>
+                <p className="text-sm text-emerald-100/80">{t.clubs.detail.payoutRecipientUnassigned}</p>
               )}
             </div>
           </CardContent>
@@ -221,80 +268,61 @@ export default async function ClubDetailPage({ params }: { params: Promise<{ id:
           </CardTitle>
           {exportRows.length > 0 && <ExportButtons clubName={club.name} rows={exportRows} />}
         </CardHeader>
-        <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>{t.clubs.detail.turn}</TableHead>
-                <TableHead>{t.clubs.detail.member}</TableHead>
-                <TableHead>{t.clubs.detail.thisMonth}</TableHead>
-                <TableHead>{t.clubs.detail.totalSaved}</TableHead>
-                <TableHead>{t.reputation.reputationLabel}</TableHead>
-                <TableHead className="text-right">{t.clubs.detail.payoutDate}</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {club.members.map((member) => {
-                const memberReportsForCycle = cycleDueDate
-                  ? club.paymentReports.filter(
-                      (r) => r.userId === member.userId && isReportForCycle(r, cycleDueDate, club.durationUnit, club.frequency)
-                    )
-                  : [];
-                const status = cycleDueDate
-                  ? computeMemberStatusForCycle(memberReportsForCycle, cycleDueDate, club.gracePeriodDays)
-                  : "UPCOMING";
-                const totalSaved = sumApprovedAmount(
-                  club.paymentReports.filter((r) => r.userId === member.userId)
-                );
-                const memberPayoutDate = member.payoutTurn
-                  ? (club.cycles.find((c) => c.cycleNumber === member.payoutTurn)?.payoutDate ?? null)
-                  : null;
-                const isSelf = member.userId === currentUserId;
-                const isClubMemberAdmin = member.userId === club.adminId;
+        <CardContent className="flex flex-col gap-2">
+          {club.members.map((member) => {
+            const memberReportsForCycle = cycleDueDate
+              ? club.paymentReports.filter(
+                  (r) => r.userId === member.userId && isReportForCycle(r, cycleDueDate, club.durationUnit, club.frequency)
+                )
+              : [];
+            const status = cycleDueDate
+              ? computeMemberStatusForCycle(memberReportsForCycle, cycleDueDate, club.gracePeriodDays)
+              : "UPCOMING";
+            const isSelf = member.userId === currentUserId;
+            const isClubMemberAdmin = member.userId === club.adminId;
 
-                return (
-                  <TableRow key={member.id}>
-                    <TableCell className="font-medium">
-                      {member.payoutTurn ? `#${member.payoutTurn}` : t.clubs.detail.unassigned}
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-2">
-                        <Avatar className="h-7 w-7">
-                          <AvatarFallback className="text-xs">{initials(member.user.fullName)}</AvatarFallback>
-                        </Avatar>
-                        <span>
-                          {member.user.fullName}
-                          {isSelf && <span className="ml-1 text-xs text-muted-foreground">{t.clubs.detail.you}</span>}
-                          {isClubMemberAdmin && (
-                            <span className="ml-1.5 rounded-full bg-indigo-100 px-1.5 py-0.5 text-[10px] font-semibold text-indigo-700 dark:bg-indigo-950 dark:text-indigo-300">
-                              {t.clubs.detail.adminTag}
-                            </span>
-                          )}
+            let subMessage: string;
+            if (status === "PAID") {
+              const approved = memberReportsForCycle.find((r) => r.status === "APPROVED");
+              subMessage = interpolate(t.clubs.detail.contributedOn, {
+                date: formatDate(approved?.approvedAt ?? approved?.paymentDate ?? new Date(), locale),
+              });
+            } else if (status === "REPORTED") {
+              subMessage = t.clubs.detail.reportedPendingReview;
+            } else if (status === "OVERDUE" && cycleDueDate) {
+              subMessage = interpolate(t.clubs.detail.overdueSince, { date: formatDate(cycleDueDate, locale) });
+            } else {
+              subMessage = t.clubs.detail.notYetDue;
+            }
+
+            return (
+              <div
+                key={member.id}
+                className="flex items-center justify-between gap-3 rounded-2xl border border-emerald-900/[0.08] bg-muted p-3 dark:border-white/[0.06]"
+              >
+                <div className="flex min-w-0 items-center gap-3">
+                  <Avatar className="h-10 w-10">
+                    <AvatarFallback className="bg-emerald-100 text-xs font-semibold text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300">
+                      {initials(member.user.fullName)}
+                    </AvatarFallback>
+                  </Avatar>
+                  <div className="min-w-0">
+                    <div className="flex flex-wrap items-center gap-1.5">
+                      <span className="truncate text-sm font-medium">{member.user.fullName}</span>
+                      {isSelf && <span className="text-xs text-muted-foreground">{t.clubs.detail.you}</span>}
+                      {isClubMemberAdmin && (
+                        <span className="rounded-full bg-indigo-100 px-1.5 py-0.5 text-[10px] font-semibold text-indigo-700 dark:bg-indigo-950 dark:text-indigo-300">
+                          {t.clubs.detail.adminTag}
                         </span>
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <MemberStatusBadge status={status} t={t} />
-                    </TableCell>
-                    <TableCell className="text-sm text-muted-foreground">{formatUSD(totalSaved)}</TableCell>
-                    <TableCell>
-                      <UserTrustBadge
-                        stats={{
-                          averageRating: member.user.averageRating,
-                          trustTier: member.user.trustTier,
-                          punctualityScore: member.user.punctualityScore,
-                          completedClubsCount: member.user.completedClubsCount,
-                        }}
-                      />
-                    </TableCell>
-                    <TableCell className="text-right text-sm text-muted-foreground">
-                      {memberPayoutDate ? formatDate(memberPayoutDate, locale) : t.clubs.detail.tbd}
-                    </TableCell>
-                  </TableRow>
-                );
-              })}
-            </TableBody>
-          </Table>
+                      )}
+                    </div>
+                    <p className="truncate text-xs text-muted-foreground">{subMessage}</p>
+                  </div>
+                </div>
+                <MemberStatusBadge status={status} t={t} />
+              </div>
+            );
+          })}
         </CardContent>
       </Card>
 
