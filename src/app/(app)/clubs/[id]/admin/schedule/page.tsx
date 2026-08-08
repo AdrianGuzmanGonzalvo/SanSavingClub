@@ -45,6 +45,8 @@ export default async function ClubSchedulePage({ params }: { params: Promise<{ i
     );
   }
 
+  const potTotal = club.quotaAmount * club.members.length;
+
   const rows: ScheduleRow[] = club.cycles.map((cycle) => {
     const member = club.members.find((m) => m.payoutTurn === cycle.cycleNumber);
     return {
@@ -53,16 +55,16 @@ export default async function ClubSchedulePage({ params }: { params: Promise<{ i
       paymentDueDate: toDateInputValue(cycle.paymentDueDate),
       payoutDate: toDateInputValue(cycle.payoutDate),
       cycleFrequency: toDropdownFrequency(cycle.cycleFrequency ?? club.frequency),
+      payoutAmount: cycle.payoutAmount ?? potTotal,
     };
   });
 
-  const potTotal = club.quotaAmount * club.members.length;
   const canEdit = club.status === "PENDING" || club.status === "ACTIVE";
 
   return (
     <div className="flex flex-col gap-6">
       <ClubSubNav clubId={club.id} isAdmin={isAdmin} isParticipant={isParticipant} />
-      <CycleScheduleEditor clubId={club.id} clubName={club.name} rows={rows} potTotal={potTotal} canEdit={canEdit} />
+      <CycleScheduleEditor clubId={club.id} clubName={club.name} rows={rows} canEdit={canEdit} />
     </div>
   );
 }

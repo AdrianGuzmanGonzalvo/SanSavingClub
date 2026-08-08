@@ -171,7 +171,9 @@ export default async function ClubAdminPage({ params }: { params: Promise<{ id: 
             canEdit={canEdit}
             initial={{
               name: club.name,
+              quotaAmount: club.quotaAmount,
               durationUnit: club.durationUnit,
+              durationCount: club.durationCount,
               paymentDueDay: club.paymentDueDay,
               payoutDay: club.payoutDay,
               lateFeeAmount: club.lateFeeAmount,
@@ -180,6 +182,7 @@ export default async function ClubAdminPage({ params }: { params: Promise<{ id: 
               adminCashAppInfo: club.adminCashAppInfo ?? "",
               adminBankInfo: club.adminBankInfo ?? "",
               allowMembersToViewOtherPayments: club.allowMembersToViewOtherPayments,
+              isActive: club.status === "ACTIVE",
             }}
           />
           <DangerZone clubId={club.id} canDeactivate={club.status !== "CANCELLED"} />

@@ -26,7 +26,9 @@ import type { DurationUnit } from "@prisma/client";
 
 export interface ClubSettingsValues {
   name: string;
+  quotaAmount: number;
   durationUnit: DurationUnit;
+  durationCount: number;
   paymentDueDay: number;
   payoutDay: number;
   lateFeeAmount: number;
@@ -35,6 +37,7 @@ export interface ClubSettingsValues {
   adminCashAppInfo: string;
   adminBankInfo: string;
   allowMembersToViewOtherPayments: boolean;
+  isActive: boolean;
 }
 
 export function ClubSettingsForm({
@@ -110,6 +113,38 @@ export function ClubSettingsForm({
               <Label htmlFor="name">{t.clubs.new.name}</Label>
               <Input id="name" name="name" defaultValue={initial.name} disabled={!canEdit} required />
             </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="flex flex-col gap-2">
+                <Label htmlFor="quotaAmount">{t.clubs.new.quotaAmount}</Label>
+                <Input
+                  id="quotaAmount"
+                  name="quotaAmount"
+                  type="number"
+                  min="1"
+                  step="0.01"
+                  defaultValue={initial.quotaAmount}
+                  disabled={!canEdit}
+                  required
+                />
+              </div>
+              <div className="flex flex-col gap-2">
+                <Label htmlFor="durationCount">{t.clubs.new.duration}</Label>
+                <Input
+                  id="durationCount"
+                  name="durationCount"
+                  type="number"
+                  min="1"
+                  max="52"
+                  defaultValue={initial.durationCount}
+                  disabled={!canEdit}
+                  required
+                />
+              </div>
+            </div>
+            {initial.isActive && (
+              <p className="-mt-2 text-xs text-muted-foreground">{t.clubs.admin.durationCountActiveHint}</p>
+            )}
 
             <div className="grid grid-cols-2 gap-4">
               <div className="flex flex-col gap-2">

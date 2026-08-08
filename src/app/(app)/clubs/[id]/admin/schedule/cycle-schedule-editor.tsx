@@ -12,7 +12,6 @@ import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useI18n } from "@/lib/i18n/i18n-provider";
 import { interpolate } from "@/lib/i18n/format";
-import { formatUSD } from "@/lib/format";
 import { updateCycleScheduleAction } from "../../../actions";
 
 export type CycleFrequencyOption = "MONTHLY" | "WEEKLY" | "BI_WEEKLY" | "CUSTOM";
@@ -23,19 +22,18 @@ export interface ScheduleRow {
   paymentDueDate: string; // yyyy-mm-dd
   payoutDate: string; // yyyy-mm-dd
   cycleFrequency: CycleFrequencyOption;
+  payoutAmount: number;
 }
 
 export function CycleScheduleEditor({
   clubId,
   clubName,
   rows: initialRows,
-  potTotal,
   canEdit,
 }: {
   clubId: string;
   clubName: string;
   rows: ScheduleRow[];
-  potTotal: number;
   canEdit: boolean;
 }) {
   const { dict: t } = useI18n();
@@ -44,8 +42,16 @@ export function CycleScheduleEditor({
   const [isPending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
 
-  function updateRow(cycleNumber: number, field: "paymentDueDate" | "payoutDate" | "cycleFrequency", value: string) {
-    setRows((prev) => prev.map((r) => (r.cycleNumber === cycleNumber ? { ...r, [field]: value } : r)));
+  function updateRow(
+    cycleNumber: number,
+    field: "paymentDueDate" | "payoutDate" | "cycleFrequency" | "payoutAmount",
+    value: string
+  ) {
+    setRows((prev) =>
+      prev.map((r) =>
+        r.cycleNumber === cycleNumber ? { ...r, [field]: field === "payoutAmount" ? Number(value) : value } : r
+      )
+    );
   }
 
   function handleSave() {
@@ -58,6 +64,7 @@ export function CycleScheduleEditor({
           paymentDueDateISO: r.paymentDueDate,
           payoutDateISO: r.payoutDate,
           cycleFrequency: r.cycleFrequency === "CUSTOM" ? null : r.cycleFrequency,
+          payoutAmount: r.payoutAmount,
         }))
       );
       if (result.error) {
@@ -138,7 +145,17 @@ export function CycleScheduleEditor({
                         </SelectContent>
                       </Select>
                     </TableCell>
-                    <TableCell className="text-right text-sm text-muted-foreground">{formatUSD(potTotal)}</TableCell>
+                    <TableCell className="text-right">
+                      <Input
+                        type="number"
+                        min="0"
+                        step="0.01"
+                        value={row.payoutAmount}
+                        disabled={!canEdit}
+                        onChange={(e) => updateRow(row.cycleNumber, "payoutAmount", e.target.value)}
+                        className="ml-auto w-28 text-right"
+                      />
+                    </TableCell>
                   </TableRow>
                 ))}
               </TableBody>

@@ -53,6 +53,7 @@ export default async function ClubDetailPage({ params }: { params: Promise<{ id:
   const payoutMember = currentCycle ? club.members.find((m) => m.payoutTurn === currentCycle) : null;
   const payoutDate = currentCycleRow?.payoutDate ?? null;
   const poolTotal = club.quotaAmount * club.members.length;
+  const payoutAmount = currentCycleRow?.payoutAmount ?? poolTotal;
 
   const currentCycleApproved = cycleDueDate
     ? sumApprovedAmount(
@@ -219,7 +220,7 @@ export default async function ClubDetailPage({ params }: { params: Promise<{ id:
                     <p className="text-base font-semibold text-white">{payoutMember.user.fullName}</p>
                     <p className="text-sm text-emerald-100/80">
                       {interpolate(t.clubs.detail.poolAndDate, {
-                        pool: formatUSD(poolTotal),
+                        pool: formatUSD(payoutAmount),
                         date: formatDate(payoutDate, locale),
                       })}
                     </p>

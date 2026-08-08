@@ -152,6 +152,7 @@ model ClubCycle {
   cycleNumber    Int
   paymentDueDate DateTime
   payoutDate     DateTime
+  payoutAmount   Float? // manual override of the pot the beneficiary receives; null falls back to quotaAmount * member count
   cycleFrequency Frequency? // optional informational override when this cycle's cadence differs from the club default
   isCompleted    Boolean    @default(false) // true for cycles before a pre-existing club's import point
   createdAt      DateTime   @default(now())

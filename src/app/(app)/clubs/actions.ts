@@ -308,7 +308,10 @@ export async function updateClubSettingsAction(
   const session = await auth();
   if (!session?.user) return { error: t.auth.mustBeSignedIn };
 
-  const club = await prisma.savingsClub.findUnique({ where: { id: clubId } });
+  const club = await prisma.savingsClub.findUnique({
+    where: { id: clubId },
+    include: { members: true, cycles: true },
+  });
   if (!club) return { error: t.clubs.detail.errors.clubNotFound };
   if (club.adminId !== session.user.id) return { error: t.clubs.detail.errors.adminOnly };
   if (club.status !== "PENDING" && club.status !== "ACTIVE") {
@@ -316,6 +319,8 @@ export async function updateClubSettingsAction(
   }
 
   const name = String(formData.get("name") ?? "").trim();
+  const quotaAmount = Number(formData.get("quotaAmount"));
+  const durationCount = Number(formData.get("durationCount"));
   const paymentDueDay = Number(formData.get("paymentDueDay"));
   const payoutDay = Number(formData.get("payoutDay"));
   const lateFeeAmount = Number(formData.get("lateFeeAmount") || 0);
@@ -326,6 +331,16 @@ export async function updateClubSettingsAction(
   const allowMembersToViewOtherPayments = String(formData.get("allowMembersToViewOtherPayments")) === "true";
 
   if (!name) return { error: t.clubs.new.errors.nameRequired };
+  if (!Number.isFinite(quotaAmount) || quotaAmount <= 0) return { error: t.clubs.new.errors.invalidAmount };
+  const [countMin, countMax] = DURATION_COUNT_BOUNDS[club.durationUnit];
+  if (!Number.isInteger(durationCount) || durationCount < countMin || durationCount > countMax) {
+    return { error: t.clubs.new.errors.invalidDuration };
+  }
+  const highestAssignedTurn = Math.max(0, ...club.members.map((m) => m.payoutTurn ?? 0));
+  const highestCycleNumber = Math.max(0, ...club.cycles.map((c) => c.cycleNumber));
+  if (durationCount < highestAssignedTurn || durationCount < highestCycleNumber) {
+    return { error: t.clubs.admin.errors.durationCountTooLow };
+  }
   const [dayMin, dayMax] = DUE_DAY_BOUNDS[club.durationUnit];
   if (!Number.isInteger(paymentDueDay) || paymentDueDay < dayMin || paymentDueDay > dayMax) {
     return { error: t.clubs.new.errors.invalidDueDay };
@@ -344,6 +359,8 @@ export async function updateClubSettingsAction(
     where: { id: clubId },
     data: {
       name,
+      quotaAmount,
+      durationCount,
       paymentDueDay,
       payoutDay,
       lateFeeAmount,
@@ -354,6 +371,31 @@ export async function updateClubSettingsAction(
       allowMembersToViewOtherPayments,
     },
   });
+
+  // Cycles are only pre-generated once the club has a start date (activation, or
+  // a pre-existing club created directly as ACTIVE) — extend the schedule with
+  // the newly added cycles instead of touching any cycle that already exists.
+  if (durationCount > club.durationCount && club.startDate && club.cycles.length > 0) {
+    const allDates = getAllCycleDates({
+      startDate: club.startDate,
+      durationUnit: club.durationUnit,
+      durationCount,
+      paymentDueDay,
+      payoutDay,
+      frequency: club.frequency,
+    });
+    const newRows = allDates.filter((d) => d.cycle > club.durationCount);
+    if (newRows.length > 0) {
+      await prisma.clubCycle.createMany({
+        data: newRows.map((d) => ({
+          clubId,
+          cycleNumber: d.cycle,
+          paymentDueDate: d.dueDate,
+          payoutDate: d.payoutDate,
+        })),
+      });
+    }
+  }
 
   if (scheduleChanged) {
     await postAuditAnnouncement(
@@ -421,6 +463,7 @@ export interface CycleScheduleUpdate {
   paymentDueDateISO: string;
   payoutDateISO: string;
   cycleFrequency: Frequency | null;
+  payoutAmount: number;
 }
 
 /** Bulk save for the full cycle schedule editor — updates every cycle's dates in one transaction. */
@@ -441,16 +484,25 @@ export async function updateCycleScheduleAction(
     paymentDueDate: new Date(u.paymentDueDateISO),
     payoutDate: new Date(u.payoutDateISO),
     cycleFrequency: u.cycleFrequency,
+    payoutAmount: u.payoutAmount,
   }));
   if (parsed.some((u) => Number.isNaN(u.paymentDueDate.getTime()) || Number.isNaN(u.payoutDate.getTime()))) {
     return { error: t.clubs.new.errors.datesRequired };
+  }
+  if (parsed.some((u) => !Number.isFinite(u.payoutAmount) || u.payoutAmount < 0)) {
+    return { error: t.clubs.new.errors.invalidAmount };
   }
 
   await prisma.$transaction(
     parsed.map((u) =>
       prisma.clubCycle.update({
         where: { clubId_cycleNumber: { clubId, cycleNumber: u.cycleNumber } },
-        data: { paymentDueDate: u.paymentDueDate, payoutDate: u.payoutDate, cycleFrequency: u.cycleFrequency },
+        data: {
+          paymentDueDate: u.paymentDueDate,
+          payoutDate: u.payoutDate,
+          cycleFrequency: u.cycleFrequency,
+          payoutAmount: u.payoutAmount,
+        },
       })
     )
   );

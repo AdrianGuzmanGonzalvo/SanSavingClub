@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { ArrowRight, CalendarCheck, Link2, Plus, Users, Wallet } from "lucide-react";
+import { ArrowRight, Link2, Plus, Users, Wallet } from "lucide-react";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { formatDate, formatUSD } from "@/lib/format";
@@ -76,6 +76,8 @@ export default async function DashboardPage() {
     .sort((a, b) => a.dueDate.getTime() - b.dueDate.getTime());
 
   const nextDue = upcomingDues[0];
+  const showProgress = accumulated > 0;
+  const showNextAction = Boolean(nextDue);
 
   const managedClubs: ClubCard[] = [
     ...memberships
@@ -135,48 +137,47 @@ export default async function DashboardPage() {
         )}
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-2">
-        <Card className="border-l-4 border-l-emerald-500 shadow-sm transition-all duration-200 hover:shadow-lg">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-base">
-              <Wallet className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
-              {t.dashboard.totalProgress}
-            </CardTitle>
-            <CardDescription>{t.dashboard.acrossClubs}</CardDescription>
-          </CardHeader>
-          <CardContent className="flex flex-col gap-3">
-            <div className="flex items-baseline justify-between">
-              <span className="text-2xl font-bold">{formatUSD(accumulated)}</span>
-              <span className="text-sm text-muted-foreground">
-                {interpolate(t.dashboard.of, { target: formatUSD(targetTotal) })}
-              </span>
-            </div>
-            <Progress value={progressPct} />
-          </CardContent>
-        </Card>
+      {(showProgress || showNextAction) && (
+        <div className={`grid gap-4 ${showProgress && showNextAction ? "sm:grid-cols-2" : ""}`}>
+          {showProgress && (
+            <Card className="border-l-4 border-l-emerald-500 shadow-sm transition-all duration-200 hover:shadow-lg">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-base">
+                  <Wallet className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
+                  {t.dashboard.totalProgress}
+                </CardTitle>
+                <CardDescription>{t.dashboard.acrossClubs}</CardDescription>
+              </CardHeader>
+              <CardContent className="flex flex-col gap-3">
+                <div className="flex items-baseline justify-between">
+                  <span className="text-2xl font-bold">{formatUSD(accumulated)}</span>
+                  <span className="text-sm text-muted-foreground">
+                    {interpolate(t.dashboard.of, { target: formatUSD(targetTotal) })}
+                  </span>
+                </div>
+                <Progress value={progressPct} />
+              </CardContent>
+            </Card>
+          )}
 
-        <Card className="border-l-4 border-l-amber-500 shadow-sm transition-all duration-200 hover:shadow-lg">
-          <CardHeader>
-            <CardTitle className="text-base">{t.dashboard.nextAction}</CardTitle>
-            <CardDescription>{t.dashboard.upcomingDue}</CardDescription>
-          </CardHeader>
-          <CardContent>
-            {nextDue ? (
-              <div className="flex flex-col gap-1">
-                <span className="text-2xl font-bold">{formatUSD(nextDue.club.quotaAmount)}</span>
-                <span className="text-sm text-muted-foreground">
-                  {nextDue.club.name} &middot; {formatDate(nextDue.dueDate, locale)}
-                </span>
-              </div>
-            ) : (
-              <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                <CalendarCheck className="h-4 w-4" />
-                {t.dashboard.noUpcoming}
-              </div>
-            )}
-          </CardContent>
-        </Card>
-      </div>
+          {showNextAction && (
+            <Card className="border-l-4 border-l-amber-500 shadow-sm transition-all duration-200 hover:shadow-lg">
+              <CardHeader>
+                <CardTitle className="text-base">{t.dashboard.nextAction}</CardTitle>
+                <CardDescription>{t.dashboard.upcomingDue}</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="flex flex-col gap-1">
+                  <span className="text-2xl font-bold">{formatUSD(nextDue!.club.quotaAmount)}</span>
+                  <span className="text-sm text-muted-foreground">
+                    {nextDue!.club.name} &middot; {formatDate(nextDue!.dueDate, locale)}
+                  </span>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+        </div>
+      )}
     </div>
   );
 }
