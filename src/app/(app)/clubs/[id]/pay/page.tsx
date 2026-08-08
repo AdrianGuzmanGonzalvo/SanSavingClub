@@ -6,6 +6,7 @@ import { getDictionary, getLocale } from "@/lib/i18n/locale";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ClubSubNav } from "../club-sub-nav";
 import { PayForm } from "./pay-form";
+import { AdminRecordPaymentCard } from "./admin-record-payment-card";
 
 export default async function ClubPayPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -14,19 +15,21 @@ export default async function ClubPayPage({ params }: { params: Promise<{ id: st
 
   const club = await prisma.savingsClub.findUnique({
     where: { id },
-    include: { members: true },
+    include: { members: { include: { user: true }, orderBy: { joinedAt: "asc" } } },
   });
 
   if (!club) notFound();
   const currentUserId = session!.user.id;
   const isAdmin = club.adminId === currentUserId;
-  if (!club.members.some((m) => m.userId === currentUserId)) notFound();
+  const isParticipant = club.members.some((m) => m.userId === currentUserId);
+  if (!isParticipant && !isAdmin) notFound();
 
   const hasInstructions = club.adminZelleInfo || club.adminCashAppInfo || club.adminBankInfo;
+  const payableMembers = club.members.map((m) => ({ userId: m.userId, fullName: m.user.fullName }));
 
   return (
     <div className="flex flex-col gap-6">
-      <ClubSubNav clubId={club.id} isAdmin={isAdmin} />
+      <ClubSubNav clubId={club.id} isAdmin={isAdmin} isParticipant={isParticipant} />
       <div className="mx-auto flex w-full max-w-md flex-col gap-4">
         <Card>
           <CardHeader>
@@ -69,12 +72,18 @@ export default async function ClubPayPage({ params }: { params: Promise<{ id: st
           </CardContent>
         </Card>
 
-        <PayForm
-          clubId={club.id}
-          quotaAmount={club.quotaAmount}
-          lateFeeAmount={club.lateFeeAmount}
-          paymentDueDay={club.paymentDueDay}
-        />
+        {isParticipant && (
+          <PayForm
+            clubId={club.id}
+            quotaAmount={club.quotaAmount}
+            lateFeeAmount={club.lateFeeAmount}
+            paymentDueDay={club.paymentDueDay}
+          />
+        )}
+
+        {isAdmin && club.status === "ACTIVE" && (
+          <AdminRecordPaymentCard clubId={club.id} quotaAmount={club.quotaAmount} members={payableMembers} />
+        )}
       </div>
     </div>
   );

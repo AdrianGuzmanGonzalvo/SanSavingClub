@@ -60,6 +60,7 @@ export default async function ClubAdminPage({ params }: { params: Promise<{ id: 
     fullName: m.user.fullName,
     payoutTurn: m.payoutTurn,
     isAdmin: m.userId === club.adminId,
+    payoutPaid: m.payoutPaid,
   }));
 
   const pendingReports: PendingReport[] = club.paymentReports

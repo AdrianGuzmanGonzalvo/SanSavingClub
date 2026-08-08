@@ -9,6 +9,16 @@ export async function signOutAction() {
   await signOut({ redirectTo: "/" });
 }
 
+export async function markNotificationsReadAction(): Promise<void> {
+  const session = await auth();
+  if (!session?.user) return;
+
+  await prisma.notification.updateMany({
+    where: { userId: session.user.id, isRead: false },
+    data: { isRead: true },
+  });
+}
+
 export interface ProfileFormState {
   error?: string;
 }

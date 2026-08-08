@@ -1,11 +1,11 @@
 import { notFound } from "next/navigation";
-import { AlertTriangle, CalendarClock, Gift, Megaphone, RefreshCw, Sparkles, Users } from "lucide-react";
+import { AlertTriangle, CalendarClock, CheckCircle2, Gift, Megaphone, RefreshCw, Sparkles, Users } from "lucide-react";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { formatDate, formatUSD } from "@/lib/format";
 import { getDictionary, getLocale } from "@/lib/i18n/locale";
 import { formatClubDuration, formatScheduleDay, interpolate } from "@/lib/i18n/format";
-import { computeMemberStatusForCycle, getCurrentCycleFromRows, isReportForCycle, sumApprovedAmount } from "@/lib/club";
+import { computeMemberStatusForCycle, getCurrentCycleFromRows, sumApprovedAmount } from "@/lib/club";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Progress } from "@/components/ui/progress";
@@ -13,6 +13,7 @@ import { Badge } from "@/components/ui/badge";
 import { ClubStatusBadge } from "@/components/club-status-badge";
 import { InviteCode } from "./invite-code";
 import { ActivateClubButton } from "./admin-actions";
+import { MarkPayoutButton } from "./mark-payout-button";
 import { MemberStatusBadge } from "./status-badge";
 import { ClubSubNav } from "./club-sub-nav";
 import { ExportButtons } from "./export-buttons";
@@ -55,10 +56,8 @@ export default async function ClubDetailPage({ params }: { params: Promise<{ id:
   const poolTotal = club.quotaAmount * club.members.length;
   const payoutAmount = currentCycleRow?.payoutAmount ?? poolTotal;
 
-  const currentCycleApproved = cycleDueDate
-    ? sumApprovedAmount(
-        club.paymentReports.filter((r) => isReportForCycle(r, cycleDueDate, club.durationUnit, club.frequency))
-      )
+  const currentCycleApproved = currentCycle
+    ? sumApprovedAmount(club.paymentReports.filter((r) => r.cycleNumber === currentCycle))
     : 0;
   const currentCycleProgressPct = poolTotal > 0 ? Math.min(100, Math.round((currentCycleApproved / poolTotal) * 100)) : 0;
 
@@ -70,13 +69,10 @@ export default async function ClubDetailPage({ params }: { params: Promise<{ id:
     .sort((a, b) => (b.approvedAt?.getTime() ?? 0) - (a.approvedAt?.getTime() ?? 0))
     .map((r) => {
       const member = club.members.find((m) => m.userId === r.userId);
-      const matchingCycle = club.cycles.find((c) =>
-        isReportForCycle(r, c.paymentDueDate, club.durationUnit, club.frequency)
-      );
       return {
         id: r.id,
         memberName: member?.user.fullName ?? t.clubs.detail.unassigned,
-        cycleNumber: matchingCycle?.cycleNumber ?? null,
+        cycleNumber: r.cycleNumber,
         amount: formatUSD(r.amount),
         submittedOn: formatDate(r.createdAt, locale),
         approvedOn: r.approvedAt ? formatDate(r.approvedAt, locale) : null,
@@ -174,7 +170,7 @@ export default async function ClubDetailPage({ params }: { params: Promise<{ id:
           <Card>
             <CardContent className="pt-6">
               <p className="text-[0.85rem] font-medium text-muted-foreground">{t.clubs.detail.quotaLabel}</p>
-              <p className="mt-1 text-[1.65rem] font-bold tabular-nums">{formatUSD(club.quotaAmount)}</p>
+              <p className="mt-1 text-[1.65rem] font-bold tabular-nums">{formatUSD(payoutAmount)}</p>
             </CardContent>
           </Card>
           <Card>
@@ -208,7 +204,7 @@ export default async function ClubDetailPage({ params }: { params: Promise<{ id:
                 {interpolate(t.clubs.detail.payoutBannerTurn, { turn: currentCycle, date: formatDate(payoutDate, locale) })}
               </span>
             </div>
-            <div className="flex items-center justify-between gap-3 border-t border-white/10 pt-3">
+            <div className="flex flex-col items-start justify-between gap-3 border-t border-white/10 pt-3 sm:flex-row sm:items-center">
               {payoutMember ? (
                 <div className="flex items-center gap-3">
                   <Avatar className="h-12 w-12 border border-white/20">
@@ -228,6 +224,9 @@ export default async function ClubDetailPage({ params }: { params: Promise<{ id:
                 </div>
               ) : (
                 <p className="text-sm text-emerald-100/80">{t.clubs.detail.payoutRecipientUnassigned}</p>
+              )}
+              {isAdmin && payoutMember && currentCycleRow && !currentCycleRow.isCompleted && (
+                <MarkPayoutButton clubId={club.id} />
               )}
             </div>
           </CardContent>
@@ -271,10 +270,8 @@ export default async function ClubDetailPage({ params }: { params: Promise<{ id:
         </CardHeader>
         <CardContent className="flex flex-col gap-2">
           {club.members.map((member) => {
-            const memberReportsForCycle = cycleDueDate
-              ? club.paymentReports.filter(
-                  (r) => r.userId === member.userId && isReportForCycle(r, cycleDueDate, club.durationUnit, club.frequency)
-                )
+            const memberReportsForCycle = currentCycle
+              ? club.paymentReports.filter((r) => r.userId === member.userId && r.cycleNumber === currentCycle)
               : [];
             const status = cycleDueDate
               ? computeMemberStatusForCycle(memberReportsForCycle, cycleDueDate, club.gracePeriodDays)
@@ -316,6 +313,11 @@ export default async function ClubDetailPage({ params }: { params: Promise<{ id:
                           {t.clubs.detail.adminTag}
                         </span>
                       )}
+                      {member.payoutPaid && (
+                        <span className="flex items-center gap-0.5 rounded-full bg-emerald-100 px-1.5 py-0.5 text-[10px] font-semibold text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300">
+                          <CheckCircle2 className="h-2.5 w-2.5" /> {t.clubs.detail.payoutReceivedTag}
+                        </span>
+                      )}
                     </div>
                     <p className="truncate text-xs text-muted-foreground">{subMessage}</p>
                   </div>
@@ -327,7 +329,7 @@ export default async function ClubDetailPage({ params }: { params: Promise<{ id:
         </CardContent>
       </Card>
 
-      <PaymentHistoryCard entries={paymentHistoryEntries} restricted={!canViewAllPayments} />
+      <PaymentHistoryCard clubId={club.id} entries={paymentHistoryEntries} restricted={!canViewAllPayments} isAdmin={isAdmin} />
     </div>
   );
 }

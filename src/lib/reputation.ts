@@ -1,6 +1,5 @@
 import { prisma } from "@/lib/prisma";
-import { isReportForCycle } from "@/lib/club";
-import type { DurationUnit, Frequency, PaymentReport, TrustTier } from "@prisma/client";
+import type { TrustTier } from "@prisma/client";
 
 export function computeTrustTier(completedClubsCount: number, punctualityScore: number): TrustTier {
   if (completedClubsCount >= 6 && punctualityScore >= 90) return "GOLD";
@@ -8,16 +7,15 @@ export function computeTrustTier(completedClubsCount: number, punctualityScore: 
   return "BRONZE";
 }
 
-/** Whether a payment report was made on or before the due date of the cycle it belongs to. */
+/** Whether a payment report was made on or before the due date of the cycle it's applied to. */
 export function isPaymentOnTime(
-  durationUnit: DurationUnit,
-  frequency: Frequency,
-  cycles: { paymentDueDate: Date }[],
-  report: Pick<PaymentReport, "paymentDate">
+  cycles: { cycleNumber: number; paymentDueDate: Date }[],
+  cycleNumber: number | null,
+  paymentDate: Date
 ): boolean {
-  const matchingCycle = cycles.find((c) => isReportForCycle(report, c.paymentDueDate, durationUnit, frequency));
+  const matchingCycle = cycles.find((c) => c.cycleNumber === cycleNumber);
   if (!matchingCycle) return true;
-  return report.paymentDate <= matchingCycle.paymentDueDate;
+  return paymentDate <= matchingCycle.paymentDueDate;
 }
 
 /** Updates a member's punctuality stats after one of their payments is approved. */
@@ -27,6 +25,24 @@ export async function recordPaymentApproval(userId: string, onTime: boolean): Pr
     data: {
       totalPaymentsCount: { increment: 1 },
       onTimePaymentsCount: onTime ? { increment: 1 } : undefined,
+    },
+  });
+
+  const punctualityScore = user.totalPaymentsCount > 0 ? (user.onTimePaymentsCount / user.totalPaymentsCount) * 100 : 100;
+
+  await prisma.user.update({
+    where: { id: userId },
+    data: { punctualityScore, trustTier: computeTrustTier(user.completedClubsCount, punctualityScore) },
+  });
+}
+
+/** Reverses recordPaymentApproval — used when an admin deletes a payment report that had already been approved. */
+export async function reversePaymentApproval(userId: string, onTime: boolean): Promise<void> {
+  const user = await prisma.user.update({
+    where: { id: userId },
+    data: {
+      totalPaymentsCount: { decrement: 1 },
+      onTimePaymentsCount: onTime ? { decrement: 1 } : undefined,
     },
   });
 

@@ -71,6 +71,7 @@ model User {
   paymentReports PaymentReport[]
   approvedReports PaymentReport[] @relation("ReportApprover")
   announcements  Announcement[]
+  notifications  Notification[]
 
   // Reputation
   completedClubsCount Int       @default(0)
@@ -140,6 +141,7 @@ model SavingsClub {
   announcements  Announcement[]
   ratings        Rating[]
   cycles         ClubCycle[]
+  notifications  Notification[]
 }
 
 // Explicit, per-cycle due/payout dates. Generated when a club is activated
@@ -183,6 +185,10 @@ model PaymentReport {
   amount        Float
   paymentDate   DateTime
   method        PaymentMethod
+  // Which cycle this payment is applied to — assigned at submission time to
+  // the member's earliest cycle without a non-rejected report yet (not
+  // derived from paymentDate), so catch-up payments land on the right cycle.
+  cycleNumber   Int?
   referenceNote String? // transaction ID, memo, or confirmation #
   receiptUrl    String? // image / screenshot data URL
   status        ReportStatus @default(PENDING)
@@ -206,4 +212,25 @@ model Announcement {
   createdAt DateTime    @default(now())
   club      SavingsClub @relation(fields: [clubId], references: [id])
   author    User        @relation(fields: [authorId], references: [id])
+}
+
+enum NotificationType {
+  PAYMENT_REPORTED
+}
+
+model Notification {
+  id        String           @id @default(uuid())
+  userId    String // recipient
+  clubId    String?
+  type      NotificationType
+  title     String
+  body      String
+  link      String? // where clicking the notification should navigate
+  isRead    Boolean          @default(false)
+  createdAt DateTime         @default(now())
+
+  user User         @relation(fields: [userId], references: [id])
+  club SavingsClub? @relation(fields: [clubId], references: [id])
+
+  @@index([userId, isRead])
 }

@@ -4,11 +4,12 @@ import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
-import { generateInviteCode, getAllCycleDates, getCurrentCycleFromRows, subtractCycles } from "@/lib/club";
+import { generateInviteCode, getAllCycleDates, getCurrentCycleFromRows, getNextPendingCycleForMember, subtractCycles } from "@/lib/club";
 import { getDictionary, getLocale } from "@/lib/i18n/locale";
 import { formatDate } from "@/lib/format";
 import { formatScheduleDay, interpolate } from "@/lib/i18n/format";
-import { isPaymentOnTime, recordClubCompletion, recordPaymentApproval, recordRating } from "@/lib/reputation";
+import { isPaymentOnTime, recordClubCompletion, recordPaymentApproval, recordRating, reversePaymentApproval } from "@/lib/reputation";
+import { createNotification } from "@/lib/notifications";
 import type { DurationUnit, Frequency, PaymentMethod } from "@prisma/client";
 
 export interface ClubFormState {
@@ -39,6 +40,35 @@ function shuffle<T>(items: T[]): T[] {
 /** Posts a system-authored announcement so members are notified of a schedule/turn change. */
 async function postAuditAnnouncement(clubId: string, authorId: string, title: string, content: string) {
   await prisma.announcement.create({ data: { clubId, authorId, title, content } });
+}
+
+/**
+ * Auto-completes a club once its last cycle has been paid out and no payment
+ * reports are still awaiting review — called after whichever of those two
+ * things happens last. Mirrors completeClubAction's status change and
+ * reputation update, just without the manual ratings step.
+ */
+async function maybeAutoCompleteClub(clubId: string): Promise<void> {
+  const club = await prisma.savingsClub.findUnique({
+    where: { id: clubId },
+    include: { members: true, cycles: true, paymentReports: { select: { status: true } } },
+  });
+  if (!club || club.status !== "ACTIVE") return;
+
+  const lastCycle = club.cycles.find((c) => c.cycleNumber === club.durationCount);
+  if (!lastCycle?.isCompleted) return;
+  if (club.paymentReports.some((r) => r.status === "PENDING")) return;
+
+  await prisma.savingsClub.update({ where: { id: clubId }, data: { status: "COMPLETED" } });
+  await recordClubCompletion(club.members.map((m) => m.userId));
+
+  const t = getDictionary(await getLocale());
+  await postAuditAnnouncement(
+    clubId,
+    club.adminId,
+    t.clubs.admin.auditAutoCompletedTitle,
+    t.clubs.admin.auditAutoCompletedBody
+  );
 }
 
 export async function createClubAction(_prevState: ClubFormState, formData: FormData): Promise<ClubFormState> {
@@ -429,6 +459,9 @@ export async function updateCycleDatesAction(
   const club = await prisma.savingsClub.findUnique({ where: { id: clubId } });
   if (!club) return { error: t.clubs.detail.errors.clubNotFound };
   if (club.adminId !== session.user.id) return { error: t.clubs.detail.errors.adminOnly };
+  if (club.status !== "PENDING" && club.status !== "ACTIVE") {
+    return { error: t.clubs.admin.errors.notEditable };
+  }
 
   const cycle = await prisma.clubCycle.findUnique({ where: { clubId_cycleNumber: { clubId, cycleNumber } } });
   if (!cycle) return { error: t.clubs.detail.errors.clubNotFound };
@@ -478,6 +511,9 @@ export async function updateCycleScheduleAction(
   const club = await prisma.savingsClub.findUnique({ where: { id: clubId } });
   if (!club) return { error: t.clubs.detail.errors.clubNotFound };
   if (club.adminId !== session.user.id) return { error: t.clubs.detail.errors.adminOnly };
+  if (club.status !== "PENDING" && club.status !== "ACTIVE") {
+    return { error: t.clubs.admin.errors.notEditable };
+  }
 
   const parsed = updates.map((u) => ({
     cycleNumber: u.cycleNumber,
@@ -513,6 +549,55 @@ export async function updateCycleScheduleAction(
     t.clubs.admin.auditScheduleBulkChangedTitle,
     t.clubs.admin.auditScheduleBulkChangedBody
   );
+
+  return {};
+}
+
+/**
+ * Marks the current cycle's payout as delivered: closes that cycle and flags
+ * its recipient as paid. Closing the cycle is what advances "current" to the
+ * next one (getCurrentCycleFromRows skips completed cycles), which is also
+ * what makes the collected-this-cycle total read $0 again — it's recomputed
+ * from payment reports matching the new current cycle's due date, and none
+ * exist yet.
+ */
+export async function markPayoutCompletedAction(clubId: string): Promise<ClubFormState> {
+  const t = getDictionary(await getLocale());
+  const session = await auth();
+  if (!session?.user) return { error: t.auth.mustBeSignedIn };
+
+  const club = await prisma.savingsClub.findUnique({
+    where: { id: clubId },
+    include: { members: { include: { user: true } }, cycles: { orderBy: { cycleNumber: "asc" } } },
+  });
+  if (!club) return { error: t.clubs.detail.errors.clubNotFound };
+  if (club.adminId !== session.user.id) return { error: t.clubs.detail.errors.adminOnly };
+  if (club.status !== "ACTIVE") return { error: t.clubs.admin.errors.notEditable };
+
+  const currentCycle = club.cycles.length > 0 ? getCurrentCycleFromRows(club.cycles) : null;
+  const currentCycleRow = currentCycle ? club.cycles.find((c) => c.cycleNumber === currentCycle) : null;
+  if (!currentCycleRow) return { error: t.clubs.admin.errors.noCycleToPayOut };
+  if (currentCycleRow.isCompleted) return { error: t.clubs.admin.errors.payoutAlreadyDone };
+
+  const payoutMember = club.members.find((m) => m.payoutTurn === currentCycle);
+  if (!payoutMember) return { error: t.clubs.admin.errors.payoutNoRecipient };
+
+  await prisma.$transaction([
+    prisma.clubCycle.update({ where: { id: currentCycleRow.id }, data: { isCompleted: true } }),
+    prisma.clubMember.update({ where: { id: payoutMember.id }, data: { payoutPaid: true } }),
+  ]);
+
+  await postAuditAnnouncement(
+    clubId,
+    session.user.id,
+    t.clubs.admin.auditPayoutMarkedTitle,
+    interpolate(t.clubs.admin.auditPayoutMarkedBody, { turn: currentCycle!, name: payoutMember.user.fullName })
+  );
+
+  await maybeAutoCompleteClub(clubId);
+
+  revalidatePath(`/clubs/${clubId}`);
+  revalidatePath(`/clubs/${clubId}/admin`);
 
   return {};
 }
@@ -598,6 +683,7 @@ export async function activateClubAction(clubId: string): Promise<ClubFormState>
               amount: club.quotaAmount,
               paymentDate: cycle.paymentDueDate,
               method: "OTHER" as PaymentMethod,
+              cycleNumber: cycle.cycleNumber,
               referenceNote: t.clubs.detail.backfilledNote,
               status: "APPROVED" as const,
               approvedAt: new Date(),
@@ -628,12 +714,13 @@ export async function submitPaymentReportAction(
 
   const club = await prisma.savingsClub.findUnique({
     where: { id: clubId },
-    include: { members: true },
+    include: { members: true, cycles: true },
   });
   if (!club) return { error: t.clubs.detail.errors.clubNotFound };
   if (!club.members.some((m) => m.userId === session.user.id)) {
     return { error: t.clubs.pay.errors.notMember };
   }
+  if (club.status !== "ACTIVE") return { error: t.clubs.admin.errors.notActive };
 
   const amount = Number(formData.get("amount"));
   const paymentDateRaw = String(formData.get("paymentDate") ?? "");
@@ -646,6 +733,12 @@ export async function submitPaymentReportAction(
   if (!paymentDate || Number.isNaN(paymentDate.getTime())) return { error: t.clubs.pay.errors.dateRequired };
   if (!ALLOWED_METHODS.includes(method)) return { error: t.clubs.pay.errors.methodRequired };
 
+  const memberReports = await prisma.paymentReport.findMany({
+    where: { clubId, userId: session.user.id },
+    select: { cycleNumber: true, status: true },
+  });
+  const cycleNumber = getNextPendingCycleForMember(club.cycles, memberReports);
+
   await prisma.paymentReport.create({
     data: {
       clubId,
@@ -653,9 +746,19 @@ export async function submitPaymentReportAction(
       amount,
       paymentDate,
       method,
+      cycleNumber,
       referenceNote,
       receiptUrl,
     },
+  });
+
+  await createNotification({
+    userId: club.adminId,
+    clubId,
+    type: "PAYMENT_REPORTED",
+    title: t.notifications.paymentReportedTitle,
+    body: interpolate(t.notifications.paymentReportedBody, { name: session.user.name ?? "", club: club.name }),
+    link: `/clubs/${clubId}/admin`,
   });
 
   return {};
@@ -690,8 +793,42 @@ export async function reviewPaymentReportAction(
 
   // Only count toward punctuality the first time a report is approved.
   if (decision === "APPROVED" && report.status === "PENDING") {
-    await recordPaymentApproval(report.userId, isPaymentOnTime(club.durationUnit, club.frequency, club.cycles, report));
+    await recordPaymentApproval(report.userId, isPaymentOnTime(club.cycles, report.cycleNumber, report.paymentDate));
   }
+
+  await maybeAutoCompleteClub(clubId);
+
+  return {};
+}
+
+/**
+ * Deletes a payment report entirely — e.g. to correct a duplicate or
+ * fraudulent entry. If it had been approved, reverses the punctuality stats
+ * that approval counted toward the payer's reputation. Every other view
+ * (collected-this-cycle, member status, dashboard totals) reads live from
+ * PaymentReport rows, so removing this one is enough to update them all.
+ */
+export async function deletePaymentReportAction(clubId: string, reportId: string): Promise<ClubFormState> {
+  const t = getDictionary(await getLocale());
+  const session = await auth();
+  if (!session?.user) return { error: t.auth.mustBeSignedIn };
+
+  const club = await prisma.savingsClub.findUnique({ where: { id: clubId }, include: { cycles: true } });
+  if (!club) return { error: t.clubs.detail.errors.clubNotFound };
+  if (club.adminId !== session.user.id) return { error: t.clubs.detail.errors.adminOnly };
+
+  const report = await prisma.paymentReport.findUnique({ where: { id: reportId } });
+  if (!report || report.clubId !== clubId) return { error: t.clubs.detail.errors.clubNotFound };
+
+  if (report.status === "APPROVED") {
+    const onTime = isPaymentOnTime(club.cycles, report.cycleNumber, report.paymentDate);
+    await reversePaymentApproval(report.userId, onTime);
+  }
+
+  await prisma.paymentReport.delete({ where: { id: reportId } });
+
+  revalidatePath(`/clubs/${clubId}`);
+  revalidatePath(`/clubs/${clubId}/admin`);
 
   return {};
 }
@@ -710,6 +847,7 @@ export async function recordManualPaymentAction(
   const club = await prisma.savingsClub.findUnique({ where: { id: clubId }, include: { members: true, cycles: true } });
   if (!club) return { error: t.clubs.detail.errors.clubNotFound };
   if (club.adminId !== session.user.id) return { error: t.clubs.detail.errors.adminOnly };
+  if (club.status !== "ACTIVE") return { error: t.clubs.admin.errors.notActive };
   if (!club.members.some((m) => m.userId === memberUserId)) return { error: t.clubs.detail.errors.clubNotFound };
 
   const amount = Number(formData.get("amount"));
@@ -719,6 +857,12 @@ export async function recordManualPaymentAction(
   if (!Number.isFinite(amount) || amount <= 0) return { error: t.clubs.pay.errors.invalidAmount };
   if (!ALLOWED_METHODS.includes(method)) return { error: t.clubs.pay.errors.methodRequired };
 
+  const memberReports = await prisma.paymentReport.findMany({
+    where: { clubId, userId: memberUserId },
+    select: { cycleNumber: true, status: true },
+  });
+  const cycleNumber = getNextPendingCycleForMember(club.cycles, memberReports);
+
   const paymentDate = new Date();
   await prisma.paymentReport.create({
     data: {
@@ -727,6 +871,7 @@ export async function recordManualPaymentAction(
       amount,
       paymentDate,
       method,
+      cycleNumber,
       status: "APPROVED",
       approvedAt: paymentDate,
       approvedById: session.user.id,
@@ -734,7 +879,7 @@ export async function recordManualPaymentAction(
     },
   });
 
-  await recordPaymentApproval(memberUserId, isPaymentOnTime(club.durationUnit, club.frequency, club.cycles, { paymentDate }));
+  await recordPaymentApproval(memberUserId, isPaymentOnTime(club.cycles, cycleNumber, paymentDate));
 
   return {};
 }

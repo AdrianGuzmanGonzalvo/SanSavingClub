@@ -1,4 +1,4 @@
-import { addDays, addWeeks, endOfWeek, isWithinInterval, setDay, startOfWeek, subMonths, subWeeks } from "date-fns";
+import { addDays, addWeeks, setDay, subMonths, subWeeks } from "date-fns";
 import type { DurationUnit, Frequency, PaymentReport, ReportStatus } from "@prisma/client";
 
 /** Number of weeks between cycles for a WEEK-based schedule at the given payment frequency. */
@@ -101,22 +101,23 @@ export function getAllCycleDates(club: ClubSchedule): CycleDates[] {
   });
 }
 
-/** A payment report "belongs" to whichever cycle's due-date period (week(s) or month) contains its reported payment date. */
-export function isReportForCycle(
-  report: Pick<PaymentReport, "paymentDate">,
-  cycleDueDate: Date,
-  durationUnit: DurationUnit,
-  frequency: Frequency = "MONTHLY"
-): boolean {
-  if (durationUnit === "WEEK") {
-    const windowStart = startOfWeek(subWeeks(cycleDueDate, weeksPerCycle(frequency) - 1), { weekStartsOn: 0 });
-    const windowEnd = endOfWeek(cycleDueDate, { weekStartsOn: 0 });
-    return isWithinInterval(report.paymentDate, { start: windowStart, end: windowEnd });
-  }
-  return (
-    report.paymentDate.getFullYear() === cycleDueDate.getFullYear() &&
-    report.paymentDate.getMonth() === cycleDueDate.getMonth()
+/**
+ * The cycle a new payment should be applied to: the member's earliest cycle
+ * that doesn't already have a non-rejected report. This is what makes a
+ * catch-up payment land on the oldest unpaid cycle instead of "this month's"
+ * cycle by date — a member behind by two cycles who finally pays gets it
+ * applied to the first one they missed, not the current one.
+ */
+export function getNextPendingCycleForMember(
+  cycles: { cycleNumber: number }[],
+  memberReports: { cycleNumber: number | null; status: ReportStatus }[]
+): number {
+  const claimedCycles = new Set(
+    memberReports.filter((r) => r.status !== "REJECTED" && r.cycleNumber !== null).map((r) => r.cycleNumber)
   );
+  const sorted = [...cycles].sort((a, b) => a.cycleNumber - b.cycleNumber);
+  const nextPending = sorted.find((c) => !claimedCycles.has(c.cycleNumber));
+  return nextPending?.cycleNumber ?? sorted[sorted.length - 1]?.cycleNumber ?? 1;
 }
 
 export type MemberDisplayStatus = "PAID" | "REPORTED" | "OVERDUE" | "UPCOMING";

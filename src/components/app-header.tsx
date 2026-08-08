@@ -1,7 +1,8 @@
 "use client";
 
+import { useTransition } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { Bell, LayoutDashboard, User } from "lucide-react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -18,8 +19,18 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { LanguageSwitcher } from "@/components/language-switcher";
 import { ThemeToggle } from "@/components/theme-toggle";
-import { signOutAction } from "@/app/(app)/actions";
+import { signOutAction, markNotificationsReadAction } from "@/app/(app)/actions";
 import { useI18n } from "@/lib/i18n/i18n-provider";
+import { formatDate } from "@/lib/format";
+
+export interface NotificationItem {
+  id: string;
+  title: string;
+  body: string;
+  link: string | null;
+  isRead: boolean;
+  createdAt: Date;
+}
 
 function initials(name: string) {
   return name
@@ -31,11 +42,32 @@ function initials(name: string) {
     .toUpperCase();
 }
 
-export function AppHeader({ userName, userEmail }: { userName: string; userEmail: string }) {
+export function AppHeader({
+  userName,
+  userEmail,
+  notifications,
+  unreadCount,
+}: {
+  userName: string;
+  userEmail: string;
+  notifications: NotificationItem[];
+  unreadCount: number;
+}) {
   const pathname = usePathname();
-  const { dict: t } = useI18n();
+  const router = useRouter();
+  const { dict: t, locale } = useI18n();
+  const [, startTransition] = useTransition();
 
   const navLinks = [{ href: "/dashboard", label: t.header.dashboard, icon: LayoutDashboard }];
+
+  function handleOpenChange(open: boolean) {
+    if (open && unreadCount > 0) {
+      startTransition(async () => {
+        await markNotificationsReadAction();
+        router.refresh();
+      });
+    }
+  }
 
   return (
     <header className="sticky top-0 z-10 border-b border-slate-200/80 bg-white/80 backdrop-blur-md dark:border-slate-800/80 dark:bg-slate-900/70">
@@ -64,23 +96,44 @@ export function AppHeader({ userName, userEmail }: { userName: string; userEmail
           <LanguageSwitcher />
           <ThemeToggle />
 
-          <Popover>
+          <Popover onOpenChange={handleOpenChange}>
             <Tooltip>
               <TooltipTrigger asChild>
                 <PopoverTrigger asChild>
-                  <Button variant="ghost" size="icon" aria-label={t.header.notifications}>
+                  <Button variant="ghost" size="icon" aria-label={t.header.notifications} className="relative">
                     <Bell className="h-5 w-5" />
+                    {unreadCount > 0 && (
+                      <span className="absolute top-1 right-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-rose-500 px-1 text-[10px] font-semibold text-white">
+                        {unreadCount > 9 ? "9+" : unreadCount}
+                      </span>
+                    )}
                   </Button>
                 </PopoverTrigger>
               </TooltipTrigger>
               <TooltipContent>{t.header.notifications}</TooltipContent>
             </Tooltip>
-            <PopoverContent align="end" className="w-64 text-sm">
-              <div className="flex flex-col items-center gap-2 py-2 text-center">
-                <Bell className="h-6 w-6 text-muted-foreground" />
-                <p className="font-medium">{t.header.noNotifications}</p>
-                <p className="text-xs text-muted-foreground">{t.header.notificationsHint}</p>
-              </div>
+            <PopoverContent align="end" className="w-80 p-0 text-sm">
+              {notifications.length === 0 ? (
+                <div className="flex flex-col items-center gap-2 px-4 py-6 text-center">
+                  <Bell className="h-6 w-6 text-muted-foreground" />
+                  <p className="font-medium">{t.header.noNotifications}</p>
+                  <p className="text-xs text-muted-foreground">{t.header.notificationsHint}</p>
+                </div>
+              ) : (
+                <div className="flex max-h-96 flex-col divide-y overflow-y-auto">
+                  {notifications.map((n) => (
+                    <Link
+                      key={n.id}
+                      href={n.link ?? "/dashboard"}
+                      className={`flex flex-col gap-0.5 px-4 py-3 transition-colors hover:bg-accent ${!n.isRead ? "bg-emerald-50/60 dark:bg-emerald-950/20" : ""}`}
+                    >
+                      <p className="font-medium">{n.title}</p>
+                      <p className="text-xs text-muted-foreground">{n.body}</p>
+                      <p className="text-[11px] text-muted-foreground">{formatDate(n.createdAt, locale)}</p>
+                    </Link>
+                  ))}
+                </div>
+              )}
             </PopoverContent>
           </Popover>
 

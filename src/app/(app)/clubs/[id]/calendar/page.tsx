@@ -3,7 +3,7 @@ import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { getDictionary, getLocale } from "@/lib/i18n/locale";
 import { interpolate } from "@/lib/i18n/format";
-import { computeMemberStatusForCycle, isReportForCycle } from "@/lib/club";
+import { computeMemberStatusForCycle } from "@/lib/club";
 import { ClubSubNav } from "../club-sub-nav";
 import { ClubCalendarClient, type CycleInfo } from "./calendar-client";
 
@@ -34,7 +34,7 @@ export default async function ClubCalendarPage({ params }: { params: Promise<{ i
 
     for (const member of club.members) {
       const reports = club.paymentReports.filter(
-        (r) => r.userId === member.userId && isReportForCycle(r, paymentDueDate, club.durationUnit)
+        (r) => r.userId === member.userId && r.cycleNumber === cycleNumber
       );
       const status = computeMemberStatusForCycle(reports, paymentDueDate, club.gracePeriodDays);
       if (status === "PAID") paidMembers.push(member.user.fullName);

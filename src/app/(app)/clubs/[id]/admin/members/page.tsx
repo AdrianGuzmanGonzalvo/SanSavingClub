@@ -4,7 +4,7 @@ import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { getDictionary, getLocale } from "@/lib/i18n/locale";
 import { interpolate } from "@/lib/i18n/format";
-import { computeMemberStatusForCycle, getCurrentCycleFromRows, isReportForCycle } from "@/lib/club";
+import { computeMemberStatusForCycle, getCurrentCycleFromRows } from "@/lib/club";
 import { Card, CardContent } from "@/components/ui/card";
 import { ClubSubNav } from "../../club-sub-nav";
 import { TurnAssignmentSection } from "../turn-assignment";
@@ -53,6 +53,7 @@ export default async function ClubMembersPage({ params }: { params: Promise<{ id
     fullName: m.user.fullName,
     payoutTurn: m.payoutTurn,
     isAdmin: m.userId === club.adminId,
+    payoutPaid: m.payoutPaid,
   }));
 
   const currentCycle = club.cycles.length > 0 ? getCurrentCycleFromRows(club.cycles) : null;
@@ -60,10 +61,8 @@ export default async function ClubMembersPage({ params }: { params: Promise<{ id
   const cycleDueDate = currentCycleRow?.paymentDueDate ?? null;
 
   const quotaRows: MemberQuotaRow[] = club.members.map((member) => {
-    const reportsForCycle = cycleDueDate
-      ? club.paymentReports.filter(
-          (r) => r.userId === member.userId && isReportForCycle(r, cycleDueDate, club.durationUnit, club.frequency)
-        )
+    const reportsForCycle = currentCycle
+      ? club.paymentReports.filter((r) => r.userId === member.userId && r.cycleNumber === currentCycle)
       : [];
     const status = cycleDueDate
       ? computeMemberStatusForCycle(reportsForCycle, cycleDueDate, club.gracePeriodDays)

@@ -7,7 +7,7 @@ import { formatDate, formatUSD } from "@/lib/format";
 import { getDictionary, getLocale } from "@/lib/i18n/locale";
 import { formatClubDuration, interpolate } from "@/lib/i18n/format";
 import type { Dictionary } from "@/lib/i18n/dictionaries";
-import { getCurrentCycleFromRows, isReportForCycle, sumApprovedAmount } from "@/lib/club";
+import { getCurrentCycleFromRows, sumApprovedAmount } from "@/lib/club";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
@@ -68,7 +68,7 @@ export default async function DashboardPage() {
       const cycleNumber = getCurrentCycleFromRows(m.club.cycles);
       const dueDate = m.club.cycles.find((c) => c.cycleNumber === cycleNumber)!.paymentDueDate;
       const alreadyHandled = reports.some(
-        (r) => r.clubId === m.clubId && r.status !== "REJECTED" && isReportForCycle(r, dueDate, m.club.durationUnit)
+        (r) => r.clubId === m.clubId && r.status !== "REJECTED" && r.cycleNumber === cycleNumber
       );
       return { club: m.club, dueDate, alreadyHandled };
     })
@@ -100,7 +100,7 @@ export default async function DashboardPage() {
         </CardContent>
       </Card>
 
-      <div className="flex w-full max-w-xs flex-col gap-2">
+      <div className="flex w-full max-w-md flex-col gap-2">
         <span className="text-sm font-medium">{t.reputation.yourReputation}</span>
         <UserTrustBadge variant="full" stats={currentUser} />
       </div>
@@ -204,7 +204,7 @@ function ClubSection({
           </CardContent>
         </Card>
       ) : (
-        <div className="grid gap-3 sm:grid-cols-2">
+        <div className={`grid gap-3 ${clubs.length > 1 ? "sm:grid-cols-2" : ""}`}>
           {clubs.map((c) => (
             <Link key={c.clubId} href={`/clubs/${c.clubId}`}>
               <Card className="border-l-4 border-l-emerald-500/60 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-l-emerald-500 hover:shadow-lg">

@@ -22,7 +22,7 @@ export function ClubSubNav({
   const tabs = [
     { href: base, label: t.clubs.nav.overview, icon: LayoutDashboard },
     { href: `${base}/calendar`, label: t.clubs.nav.calendar, icon: CalendarDays },
-    ...(isParticipant ? [{ href: `${base}/pay`, label: t.clubs.nav.pay, icon: Wallet }] : []),
+    ...(isParticipant || isAdmin ? [{ href: `${base}/pay`, label: t.clubs.nav.pay, icon: Wallet }] : []),
     ...(isAdmin ? [{ href: `${base}/admin`, label: t.clubs.nav.admin, icon: Settings }] : []),
   ];
 

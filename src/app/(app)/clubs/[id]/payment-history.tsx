@@ -1,12 +1,26 @@
 "use client";
 
-import { useState } from "react";
-import { Eye, ScrollText } from "lucide-react";
+import { useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
+import { toast } from "sonner";
+import { Eye, Loader2, ScrollText, Trash2 } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { useI18n } from "@/lib/i18n/i18n-provider";
+import { deletePaymentReportAction } from "../actions";
 
 export interface PaymentHistoryEntry {
   id: string;
@@ -18,7 +32,17 @@ export interface PaymentHistoryEntry {
   receiptUrl: string | null;
 }
 
-export function PaymentHistoryCard({ entries, restricted = false }: { entries: PaymentHistoryEntry[]; restricted?: boolean }) {
+export function PaymentHistoryCard({
+  clubId,
+  entries,
+  restricted = false,
+  isAdmin = false,
+}: {
+  clubId: string;
+  entries: PaymentHistoryEntry[];
+  restricted?: boolean;
+  isAdmin?: boolean;
+}) {
   const { dict: t } = useI18n();
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
 
@@ -47,6 +71,7 @@ export function PaymentHistoryCard({ entries, restricted = false }: { entries: P
                 <TableHead>{t.clubs.detail.paymentHistorySubmitted}</TableHead>
                 <TableHead>{t.clubs.detail.paymentHistoryApproved}</TableHead>
                 <TableHead className="text-right">{t.clubs.admin.viewReceipt}</TableHead>
+                {isAdmin && <TableHead className="text-right">{t.clubs.detail.actions}</TableHead>}
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -66,6 +91,11 @@ export function PaymentHistoryCard({ entries, restricted = false }: { entries: P
                       <span className="text-xs text-muted-foreground">—</span>
                     )}
                   </TableCell>
+                  {isAdmin && (
+                    <TableCell className="text-right">
+                      <DeletePaymentButton clubId={clubId} reportId={entry.id} />
+                    </TableCell>
+                  )}
                 </TableRow>
               ))}
             </TableBody>
@@ -85,5 +115,50 @@ export function PaymentHistoryCard({ entries, restricted = false }: { entries: P
         </DialogContent>
       </Dialog>
     </Card>
+  );
+}
+
+function DeletePaymentButton({ clubId, reportId }: { clubId: string; reportId: string }) {
+  const { dict: t } = useI18n();
+  const router = useRouter();
+  const [isPending, startTransition] = useTransition();
+
+  function handleConfirm() {
+    startTransition(async () => {
+      const result = await deletePaymentReportAction(clubId, reportId);
+      if (result.error) {
+        toast.error(result.error);
+      } else {
+        toast.success(t.clubs.detail.paymentDeletedToast);
+        router.refresh();
+      }
+    });
+  }
+
+  return (
+    <AlertDialog>
+      <AlertDialogTrigger asChild>
+        <Button
+          variant="outline"
+          size="icon-sm"
+          disabled={isPending}
+          className="text-muted-foreground hover:text-destructive"
+        >
+          {isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Trash2 className="h-3.5 w-3.5" />}
+        </Button>
+      </AlertDialogTrigger>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>{t.clubs.detail.confirmDeletePaymentTitle}</AlertDialogTitle>
+          <AlertDialogDescription>{t.clubs.detail.confirmDeletePaymentDescription}</AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel>{t.common.cancel}</AlertDialogCancel>
+          <AlertDialogAction onClick={handleConfirm} className="bg-rose-600 text-white hover:bg-rose-700">
+            {t.clubs.detail.confirmDeletePaymentButton}
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
   );
 }
