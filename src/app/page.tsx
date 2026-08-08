@@ -4,6 +4,7 @@ import { PiggyBank, ShieldCheck, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { LanguageSwitcher } from "@/components/language-switcher";
 import { ThemeToggle } from "@/components/theme-toggle";
+import { SanSavingClubLogo } from "@/components/SanSavingClubLogo";
 import { auth } from "@/auth";
 import { getDictionary, getLocale } from "@/lib/i18n/locale";
 
@@ -18,7 +19,7 @@ export default async function Home() {
     <div className="flex min-h-screen flex-col">
       <header className="flex items-center justify-between border-b px-6 py-4">
         <div className="flex items-center gap-2 font-semibold">
-          <PiggyBank className="h-6 w-6 text-primary" />
+          <SanSavingClubLogo className="h-8 w-8" />
           {t.common.appName}
         </div>
         <div className="flex items-center gap-2">

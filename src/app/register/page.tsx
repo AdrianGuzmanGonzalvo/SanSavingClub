@@ -2,13 +2,14 @@
 
 import { useActionState } from "react";
 import Link from "next/link";
-import { Loader2, Mail, PiggyBank, User, UserPlus } from "lucide-react";
+import { Loader2, Mail, User, UserPlus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { LanguageSwitcher } from "@/components/language-switcher";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { IconInput } from "@/components/icon-input";
+import { SanSavingClubLogo } from "@/components/SanSavingClubLogo";
 import { PasswordInput } from "@/components/password-input";
 import { useI18n } from "@/lib/i18n/i18n-provider";
 import { registerAction, type RegisterState } from "./actions";
@@ -27,7 +28,7 @@ export default function RegisterPage() {
       </div>
       <Card className="w-full max-w-sm">
         <CardHeader className="items-center text-center">
-          <PiggyBank className="mb-2 h-8 w-8 text-primary" />
+          <SanSavingClubLogo className="mb-2 h-12 w-12" />
           <CardTitle>{t.auth.register.title}</CardTitle>
           <CardDescription>{t.auth.register.subtitle}</CardDescription>
         </CardHeader>
