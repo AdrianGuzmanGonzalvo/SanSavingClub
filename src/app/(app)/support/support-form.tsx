@@ -11,7 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useI18n } from "@/lib/i18n/i18n-provider";
 import { interpolate } from "@/lib/i18n/format";
 
-const SUPPORT_EMAIL = "guzmangonzalvo@gmail.com";
+const SUPPORT_EMAIL = "help@sansavingclub.com";
 const CATEGORIES = ["BUG", "QUESTION", "SUGGESTION", "OTHER"] as const;
 type Category = (typeof CATEGORIES)[number];
 
