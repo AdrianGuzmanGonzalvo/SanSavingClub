@@ -58,6 +58,7 @@ export function ClubSettingsForm({
   const [error, setError] = useState<string | null>(null);
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [pendingFormData, setPendingFormData] = useState<FormData | null>(null);
+  const [confirmReason, setConfirmReason] = useState<"schedule" | "shrink">("schedule");
 
   const [paymentDueDay, setPaymentDueDay] = useState(String(initial.paymentDueDay));
   const [payoutDay, setPayoutDay] = useState(String(initial.payoutDay));
@@ -87,9 +88,15 @@ export function ClubSettingsForm({
     const scheduleChanged =
       Number(formData.get("paymentDueDay")) !== initial.paymentDueDay ||
       Number(formData.get("payoutDay")) !== initial.payoutDay;
+    const durationShrinking = Number(formData.get("durationCount")) < initial.durationCount;
 
-    if (scheduleChanged) {
+    if (durationShrinking) {
       setPendingFormData(formData);
+      setConfirmReason("shrink");
+      setConfirmOpen(true);
+    } else if (scheduleChanged) {
+      setPendingFormData(formData);
+      setConfirmReason("schedule");
       setConfirmOpen(true);
     } else {
       submit(formData);
@@ -343,12 +350,24 @@ export function ClubSettingsForm({
       <AlertDialog open={confirmOpen} onOpenChange={setConfirmOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>{t.clubs.admin.confirmScheduleChangeTitle}</AlertDialogTitle>
-            <AlertDialogDescription>{t.clubs.admin.confirmScheduleChangeDescription}</AlertDialogDescription>
+            <AlertDialogTitle>
+              {confirmReason === "shrink"
+                ? t.clubs.admin.confirmDurationShrinkTitle
+                : t.clubs.admin.confirmScheduleChangeTitle}
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              {confirmReason === "shrink"
+                ? t.clubs.admin.confirmDurationShrinkDescription
+                : t.clubs.admin.confirmScheduleChangeDescription}
+            </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>{t.common.cancel}</AlertDialogCancel>
-            <AlertDialogAction onClick={handleConfirm}>{t.clubs.admin.confirmScheduleChangeButton}</AlertDialogAction>
+            <AlertDialogAction onClick={handleConfirm}>
+              {confirmReason === "shrink"
+                ? t.clubs.admin.confirmDurationShrinkButton
+                : t.clubs.admin.confirmScheduleChangeButton}
+            </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

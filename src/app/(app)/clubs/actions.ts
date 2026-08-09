@@ -357,10 +357,27 @@ export async function updateClubSettingsAction(
   if (!Number.isInteger(durationCount) || durationCount < countMin || durationCount > countMax) {
     return { error: t.clubs.new.errors.invalidDuration };
   }
+  // Lowering the turn count is allowed as long as nothing real would be lost:
+  // turns above the new count get unassigned and their not-yet-reached cycles
+  // get removed, but only if none of them already has a payout or a reported
+  // payment — those are blocked outright rather than silently discarded.
   const highestAssignedTurn = Math.max(0, ...club.members.map((m) => m.payoutTurn ?? 0));
   const highestCycleNumber = Math.max(0, ...club.cycles.map((c) => c.cycleNumber));
+  const cyclesToRemove = club.cycles.filter((c) => c.cycleNumber > durationCount);
+  const turnsToUnassign = club.members.filter((m) => (m.payoutTurn ?? 0) > durationCount);
   if (durationCount < highestAssignedTurn || durationCount < highestCycleNumber) {
-    return { error: t.clubs.admin.errors.durationCountTooLow };
+    if (cyclesToRemove.some((c) => c.isCompleted)) {
+      return { error: t.clubs.admin.errors.durationCountTooLow };
+    }
+    const reportsInRemovedCycles = await prisma.paymentReport.count({
+      where: { clubId, cycleNumber: { gt: durationCount } },
+    });
+    if (reportsInRemovedCycles > 0) {
+      return { error: t.clubs.admin.errors.cyclesHavePayments };
+    }
+    if (turnsToUnassign.some((m) => m.payoutPaid)) {
+      return { error: t.clubs.admin.errors.turnAlreadyPaid };
+    }
   }
   const [dayMin, dayMax] = DUE_DAY_BOUNDS[club.durationUnit];
   if (!Number.isInteger(paymentDueDay) || paymentDueDay < dayMin || paymentDueDay > dayMax) {
@@ -418,6 +435,18 @@ export async function updateClubSettingsAction(
         })),
       });
     }
+  }
+
+  if (cyclesToRemove.length > 0 || turnsToUnassign.length > 0) {
+    await prisma.$transaction([
+      prisma.clubMember.updateMany({
+        where: { id: { in: turnsToUnassign.map((m) => m.id) } },
+        data: { payoutTurn: null },
+      }),
+      prisma.clubCycle.deleteMany({
+        where: { id: { in: cyclesToRemove.map((c) => c.id) } },
+      }),
+    ]);
   }
 
   if (scheduleChanged) {
