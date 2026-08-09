@@ -33,6 +33,23 @@ export function exportPaymentHistoryCsv(clubName: string, rows: PaymentHistoryRo
   downloadBlob(blob, `${clubName.replace(/\s+/g, "_")}_payment_history.csv`);
 }
 
+export interface ContactRow {
+  name: string;
+  email: string;
+  phone: string;
+  clubs: string;
+}
+
+export function exportContactsCsv(rows: ContactRow[]) {
+  const headers = ["Name", "Email", "Phone", "Clubs"];
+  const lines = [
+    headers.join(","),
+    ...rows.map((r) => [r.name, r.email, r.phone, r.clubs].map(csvEscape).join(",")),
+  ];
+  const blob = new Blob([lines.join("\n")], { type: "text/csv;charset=utf-8;" });
+  downloadBlob(blob, "member_contacts.csv");
+}
+
 export async function exportPaymentHistoryPdf(clubName: string, rows: PaymentHistoryRow[]) {
   const { jsPDF } = await import("jspdf");
   const autoTable = (await import("jspdf-autotable")).default;

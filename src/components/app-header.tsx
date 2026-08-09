@@ -3,7 +3,7 @@
 import { useTransition } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { Bell, LayoutDashboard, User } from "lucide-react";
+import { BarChart3, Bell, LayoutDashboard, LifeBuoy, User } from "lucide-react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { SanClubEmblemLogo } from "@/components/SanClubEmblemLogo";
@@ -47,18 +47,23 @@ export function AppHeader({
   userEmail,
   notifications,
   unreadCount,
+  isLeader = false,
 }: {
   userName: string;
   userEmail: string;
   notifications: NotificationItem[];
   unreadCount: number;
+  isLeader?: boolean;
 }) {
   const pathname = usePathname();
   const router = useRouter();
   const { dict: t, locale } = useI18n();
   const [, startTransition] = useTransition();
 
-  const navLinks = [{ href: "/dashboard", label: t.header.dashboard, icon: LayoutDashboard }];
+  const navLinks = [
+    { href: "/dashboard", label: t.header.dashboard, icon: LayoutDashboard },
+    ...(isLeader ? [{ href: "/reports", label: t.reports.navLabel, icon: BarChart3 }] : []),
+  ];
 
   function handleOpenChange(open: boolean) {
     if (open && unreadCount > 0) {
@@ -154,6 +159,11 @@ export function AppHeader({
               <DropdownMenuItem asChild>
                 <Link href="/profile">
                   <User /> {t.header.profile}
+                </Link>
+              </DropdownMenuItem>
+              <DropdownMenuItem asChild>
+                <Link href="/support">
+                  <LifeBuoy /> {t.support.navLabel}
                 </Link>
               </DropdownMenuItem>
               <DropdownMenuSeparator />
