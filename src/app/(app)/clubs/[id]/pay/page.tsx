@@ -2,20 +2,26 @@ import { notFound } from "next/navigation";
 import { CreditCard, Landmark, Smartphone } from "lucide-react";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
+import { formatDate, formatUSD } from "@/lib/format";
 import { getDictionary, getLocale } from "@/lib/i18n/locale";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ClubSubNav } from "../club-sub-nav";
 import { PayForm } from "./pay-form";
 import { AdminRecordPaymentCard } from "./admin-record-payment-card";
+import { PaymentApprovalQueue, type PendingReport } from "../admin/payment-queue";
 
 export default async function ClubPayPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const session = await auth();
-  const t = getDictionary(await getLocale());
+  const locale = await getLocale();
+  const t = getDictionary(locale);
 
   const club = await prisma.savingsClub.findUnique({
     where: { id },
-    include: { members: { include: { user: true }, orderBy: { joinedAt: "asc" } } },
+    include: {
+      members: { include: { user: true }, orderBy: { joinedAt: "asc" } },
+      paymentReports: { include: { user: true }, orderBy: { createdAt: "desc" } },
+    },
   });
 
   if (!club) notFound();
@@ -27,10 +33,23 @@ export default async function ClubPayPage({ params }: { params: Promise<{ id: st
   const hasInstructions = club.adminZelleInfo || club.adminCashAppInfo || club.adminBankInfo;
   const payableMembers = club.members.map((m) => ({ userId: m.userId, fullName: m.user.fullName }));
 
+  const pendingReports: PendingReport[] = club.paymentReports
+    .filter((r) => r.status === "PENDING")
+    .map((r) => ({
+      id: r.id,
+      memberName: r.user.fullName,
+      amount: formatUSD(r.amount),
+      paymentDate: formatDate(r.paymentDate, locale),
+      method: r.method,
+      referenceNote: r.referenceNote,
+      receiptUrl: r.receiptUrl,
+      submittedOn: formatDate(r.createdAt, locale),
+    }));
+
   return (
     <div className="flex flex-col gap-6">
       <ClubSubNav clubId={club.id} isAdmin={isAdmin} isParticipant={isParticipant} />
-      <div className="mx-auto flex w-full max-w-md flex-col gap-4">
+      <div className="mx-auto flex w-full max-w-2xl flex-col gap-4">
         <Card>
           <CardHeader>
             <CardTitle className="text-base">{t.clubs.pay.instructionsTitle}</CardTitle>
@@ -80,6 +99,8 @@ export default async function ClubPayPage({ params }: { params: Promise<{ id: st
             paymentDueDay={club.paymentDueDay}
           />
         )}
+
+        {isAdmin && <PaymentApprovalQueue clubId={club.id} reports={pendingReports} />}
 
         {isAdmin && club.status === "ACTIVE" && (
           <AdminRecordPaymentCard clubId={club.id} quotaAmount={club.quotaAmount} members={payableMembers} />

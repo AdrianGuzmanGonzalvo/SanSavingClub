@@ -5,7 +5,13 @@ import { prisma } from "@/lib/prisma";
 import { formatDate, formatUSD } from "@/lib/format";
 import { getDictionary, getLocale } from "@/lib/i18n/locale";
 import { formatClubDuration, formatScheduleDay, interpolate } from "@/lib/i18n/format";
-import { computeMemberStatusForCycle, getCurrentCycleFromRows, sumApprovedAmount } from "@/lib/club";
+import {
+  buildAnonymousNumbering,
+  computeMemberStatusForCycle,
+  getCurrentCycleFromRows,
+  resolveMemberDisplayName,
+  sumApprovedAmount,
+} from "@/lib/club";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Progress } from "@/components/ui/progress";
@@ -47,6 +53,21 @@ export default async function ClubDetailPage({ params }: { params: Promise<{ id:
   const isParticipant = club.members.some((m) => m.userId === currentUserId);
   if (!isParticipant && !isAdmin) notFound();
 
+  const anonymousNumbering = buildAnonymousNumbering(
+    club.members.map((m) => ({ userId: m.userId, joinedAt: m.joinedAt, isAdmin: m.userId === club.adminId }))
+  );
+  const displayNameFor = (member: { userId: string; user: { fullName: string } }): string =>
+    resolveMemberDisplayName({
+      targetUserId: member.userId,
+      targetFullName: member.user.fullName,
+      targetIsAdmin: member.userId === club.adminId,
+      viewerUserId: currentUserId,
+      viewerIsAdmin: isAdmin,
+      allowViewOtherNames: club.allowMembersToViewOtherNames,
+      anonymousNumbering,
+      anonymousLabel: (n: number) => interpolate(t.clubs.detail.anonymousMember, { n }),
+    });
+
   const currentCycle = club.cycles.length > 0 ? getCurrentCycleFromRows(club.cycles) : null;
   const currentCycleRow = currentCycle ? club.cycles.find((c) => c.cycleNumber === currentCycle) : null;
   const cycleDueDate = currentCycleRow?.paymentDueDate ?? null;
@@ -61,7 +82,7 @@ export default async function ClubDetailPage({ params }: { params: Promise<{ id:
     : 0;
   const currentCycleProgressPct = poolTotal > 0 ? Math.min(100, Math.round((currentCycleApproved / poolTotal) * 100)) : 0;
 
-  const canViewAllPayments = club.allowMembersToViewOtherPayments || isAdmin;
+  const canViewAllPayments = isAdmin;
 
   const paymentHistoryEntries: PaymentHistoryEntry[] = club.paymentReports
     .filter((r) => r.status === "APPROVED" && (canViewAllPayments || r.userId === currentUserId))
@@ -209,11 +230,11 @@ export default async function ClubDetailPage({ params }: { params: Promise<{ id:
                 <div className="flex items-center gap-3">
                   <Avatar className="h-12 w-12 border border-white/20">
                     <AvatarFallback className="bg-white/15 text-base font-semibold text-white">
-                      {initials(payoutMember.user.fullName)}
+                      {initials(displayNameFor(payoutMember))}
                     </AvatarFallback>
                   </Avatar>
                   <div>
-                    <p className="text-base font-semibold text-white">{payoutMember.user.fullName}</p>
+                    <p className="text-base font-semibold text-white">{displayNameFor(payoutMember)}</p>
                     <p className="text-sm text-emerald-100/80">
                       {interpolate(t.clubs.detail.poolAndDate, {
                         pool: formatUSD(payoutAmount),
@@ -278,6 +299,20 @@ export default async function ClubDetailPage({ params }: { params: Promise<{ id:
               : "UPCOMING";
             const isSelf = member.userId === currentUserId;
             const isClubMemberAdmin = member.userId === club.adminId;
+            const memberDisplayName = displayNameFor(member);
+
+            const canSeeTurn = isSelf || isAdmin || isClubMemberAdmin || club.allowMembersToViewOtherTurns;
+            const canSeePayoutDate = isSelf || isAdmin || isClubMemberAdmin || club.allowMembersToViewOtherPayoutDates;
+            const memberPayoutDate = member.payoutTurn
+              ? (club.cycles.find((c) => c.cycleNumber === member.payoutTurn)?.payoutDate ?? null)
+              : null;
+            const detailFragments: string[] = [];
+            if (canSeeTurn && member.payoutTurn) {
+              detailFragments.push(interpolate(t.clubs.detail.turnBadgeLabel, { turn: member.payoutTurn }));
+            }
+            if (canSeePayoutDate && memberPayoutDate) {
+              detailFragments.push(interpolate(t.clubs.detail.payoutDateLabel, { date: formatDate(memberPayoutDate, locale) }));
+            }
 
             let subMessage: string;
             if (status === "PAID") {
@@ -301,12 +336,12 @@ export default async function ClubDetailPage({ params }: { params: Promise<{ id:
                 <div className="flex min-w-0 items-center gap-3">
                   <Avatar className="h-10 w-10">
                     <AvatarFallback className="bg-emerald-100 text-xs font-semibold text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300">
-                      {initials(member.user.fullName)}
+                      {initials(memberDisplayName)}
                     </AvatarFallback>
                   </Avatar>
                   <div className="min-w-0">
                     <div className="flex flex-wrap items-center gap-1.5">
-                      <span className="truncate text-sm font-medium">{member.user.fullName}</span>
+                      <span className="truncate text-sm font-medium">{memberDisplayName}</span>
                       {isSelf && <span className="text-xs text-muted-foreground">{t.clubs.detail.you}</span>}
                       {isClubMemberAdmin && (
                         <span className="rounded-full bg-indigo-100 px-1.5 py-0.5 text-[10px] font-semibold text-indigo-700 dark:bg-indigo-950 dark:text-indigo-300">
@@ -320,6 +355,9 @@ export default async function ClubDetailPage({ params }: { params: Promise<{ id:
                       )}
                     </div>
                     <p className="truncate text-xs text-muted-foreground">{subMessage}</p>
+                    {detailFragments.length > 0 && (
+                      <p className="truncate text-xs text-muted-foreground">{detailFragments.join(" · ")}</p>
+                    )}
                   </div>
                 </div>
                 <MemberStatusBadge status={status} t={t} />

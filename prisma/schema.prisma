@@ -131,8 +131,12 @@ model SavingsClub {
   adminCashAppInfo String?
   adminBankInfo    String?
 
-  // Privacy: when false, non-admin members only see their own approved payment history
-  allowMembersToViewOtherPayments Boolean @default(true)
+  // Member-visibility controls: what non-admin members can see about their
+  // fellow members. Payment history is intentionally not configurable here —
+  // it's always leader-only, regardless of these settings.
+  allowMembersToViewOtherTurns       Boolean @default(true)
+  allowMembersToViewOtherNames       Boolean @default(true)
+  allowMembersToViewOtherPayoutDates Boolean @default(true)
 
   createdAt      DateTime        @default(now())
   updatedAt      DateTime        @updatedAt

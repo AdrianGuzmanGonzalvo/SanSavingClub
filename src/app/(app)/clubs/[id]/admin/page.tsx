@@ -1,9 +1,9 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { CheckCircle2, ArrowUpDown, CalendarClock, CalendarRange, Settings, Megaphone, Users } from "lucide-react";
+import { ArrowUpDown, CalendarClock, CalendarRange, Settings, Megaphone, Users } from "lucide-react";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
-import { formatDate, formatUSD } from "@/lib/format";
+import { formatDate } from "@/lib/format";
 import { getDictionary, getLocale } from "@/lib/i18n/locale";
 import { interpolate } from "@/lib/i18n/format";
 import { getCurrentCycleFromRows } from "@/lib/club";
@@ -15,7 +15,6 @@ import { TurnAssignmentSection } from "./turn-assignment";
 import { SwapTurnsDialog } from "./swap-turns-dialog";
 import { ClubSettingsForm } from "./club-settings-form";
 import { CycleDatesPanel, type CycleRow } from "./cycle-dates-panel";
-import { PaymentApprovalQueue, type PendingReport } from "./payment-queue";
 import { AnnouncementPanel, type AnnouncementItem } from "./announcement-panel";
 import { CompleteClubDialog } from "./complete-club-dialog";
 import { LifecycleControls } from "./lifecycle-controls";
@@ -31,7 +30,6 @@ export default async function ClubAdminPage({ params }: { params: Promise<{ id: 
     where: { id },
     include: {
       members: { include: { user: true }, orderBy: { joinedAt: "asc" } },
-      paymentReports: { include: { user: true }, orderBy: { createdAt: "desc" } },
       announcements: { include: { author: true }, orderBy: { createdAt: "desc" } },
       cycles: { orderBy: { cycleNumber: "asc" } },
     },
@@ -62,19 +60,6 @@ export default async function ClubAdminPage({ params }: { params: Promise<{ id: 
     isAdmin: m.userId === club.adminId,
     payoutPaid: m.payoutPaid,
   }));
-
-  const pendingReports: PendingReport[] = club.paymentReports
-    .filter((r) => r.status === "PENDING")
-    .map((r) => ({
-      id: r.id,
-      memberName: r.user.fullName,
-      amount: formatUSD(r.amount),
-      paymentDate: formatDate(r.paymentDate, locale),
-      method: r.method,
-      referenceNote: r.referenceNote,
-      receiptUrl: r.receiptUrl,
-      submittedOn: formatDate(r.createdAt, locale),
-    }));
 
   const announcementItems: AnnouncementItem[] = club.announcements.map((a) => ({
     id: a.id,
@@ -118,11 +103,8 @@ export default async function ClubAdminPage({ params }: { params: Promise<{ id: 
         </div>
       </div>
 
-      <Tabs defaultValue="approvals">
+      <Tabs defaultValue="turns">
         <TabsList className="w-full sm:w-fit">
-          <TabsTrigger value="approvals">
-            <CheckCircle2 /> {t.clubs.admin.tabs.approvals}
-          </TabsTrigger>
           <TabsTrigger value="turns">
             <ArrowUpDown /> {t.clubs.admin.tabs.turns}
           </TabsTrigger>
@@ -141,10 +123,6 @@ export default async function ClubAdminPage({ params }: { params: Promise<{ id: 
             <Megaphone /> {t.clubs.admin.tabs.announcements}
           </TabsTrigger>
         </TabsList>
-
-        <TabsContent value="approvals" className="mt-4">
-          <PaymentApprovalQueue clubId={club.id} reports={pendingReports} />
-        </TabsContent>
 
         <TabsContent value="turns" className="mt-4 flex flex-col gap-4">
           <TurnAssignmentSection
@@ -182,7 +160,9 @@ export default async function ClubAdminPage({ params }: { params: Promise<{ id: 
               adminZelleInfo: club.adminZelleInfo ?? "",
               adminCashAppInfo: club.adminCashAppInfo ?? "",
               adminBankInfo: club.adminBankInfo ?? "",
-              allowMembersToViewOtherPayments: club.allowMembersToViewOtherPayments,
+              allowMembersToViewOtherTurns: club.allowMembersToViewOtherTurns,
+              allowMembersToViewOtherNames: club.allowMembersToViewOtherNames,
+              allowMembersToViewOtherPayoutDates: club.allowMembersToViewOtherPayoutDates,
               isActive: club.status === "ACTIVE",
             }}
           />

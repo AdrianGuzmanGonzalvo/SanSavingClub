@@ -120,6 +120,51 @@ export function getNextPendingCycleForMember(
   return nextPending?.cycleNumber ?? sorted[sorted.length - 1]?.cycleNumber ?? 1;
 }
 
+/**
+ * Assigns a stable "Member N" number to every non-admin member, ordered by
+ * join date — used to anonymize other members' identities without the
+ * numbering shifting depending on who's looking.
+ */
+export function buildAnonymousNumbering(
+  members: { userId: string; joinedAt: Date; isAdmin: boolean }[]
+): Map<string, number> {
+  const numbering = new Map<string, number>();
+  const nonAdmin = [...members].filter((m) => !m.isAdmin).sort((a, b) => a.joinedAt.getTime() - b.joinedAt.getTime());
+  nonAdmin.forEach((m, i) => numbering.set(m.userId, i + 1));
+  return numbering;
+}
+
+/**
+ * Resolves the display name a viewer should see for a given member. Admins
+ * and the viewer's own name are never anonymized — only a club's
+ * `allowMembersToViewOtherNames = false` setting hides fellow members.
+ */
+export function resolveMemberDisplayName(params: {
+  targetUserId: string;
+  targetFullName: string;
+  targetIsAdmin: boolean;
+  viewerUserId: string;
+  viewerIsAdmin: boolean;
+  allowViewOtherNames: boolean;
+  anonymousNumbering: Map<string, number>;
+  anonymousLabel: (n: number) => string;
+}): string {
+  const {
+    targetUserId,
+    targetFullName,
+    targetIsAdmin,
+    viewerUserId,
+    viewerIsAdmin,
+    allowViewOtherNames,
+    anonymousNumbering,
+    anonymousLabel,
+  } = params;
+  if (targetUserId === viewerUserId || targetIsAdmin || viewerIsAdmin || allowViewOtherNames) {
+    return targetFullName;
+  }
+  return anonymousLabel(anonymousNumbering.get(targetUserId) ?? 0);
+}
+
 export type MemberDisplayStatus = "PAID" | "REPORTED" | "OVERDUE" | "UPCOMING";
 
 export function computeMemberStatusForCycle(

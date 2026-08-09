@@ -36,7 +36,9 @@ export interface ClubSettingsValues {
   adminZelleInfo: string;
   adminCashAppInfo: string;
   adminBankInfo: string;
-  allowMembersToViewOtherPayments: boolean;
+  allowMembersToViewOtherTurns: boolean;
+  allowMembersToViewOtherNames: boolean;
+  allowMembersToViewOtherPayoutDates: boolean;
   isActive: boolean;
 }
 
@@ -59,7 +61,9 @@ export function ClubSettingsForm({
 
   const [paymentDueDay, setPaymentDueDay] = useState(String(initial.paymentDueDay));
   const [payoutDay, setPayoutDay] = useState(String(initial.payoutDay));
-  const [allowViewOthers, setAllowViewOthers] = useState(initial.allowMembersToViewOtherPayments);
+  const [allowViewTurns, setAllowViewTurns] = useState(initial.allowMembersToViewOtherTurns);
+  const [allowViewNames, setAllowViewNames] = useState(initial.allowMembersToViewOtherNames);
+  const [allowViewPayoutDates, setAllowViewPayoutDates] = useState(initial.allowMembersToViewOtherPayoutDates);
 
   const dayBounds = initial.durationUnit === "WEEK" ? { min: 0, max: 6 } : { min: 1, max: 31 };
 
@@ -274,19 +278,53 @@ export function ClubSettingsForm({
             <div className="flex flex-col gap-3 border-t pt-4">
               <div>
                 <p className="flex items-center gap-1.5 text-sm font-medium">
-                  <Eye className="h-3.5 w-3.5" /> {t.clubs.admin.privacyTitle}
+                  <Eye className="h-3.5 w-3.5" /> {t.clubs.admin.memberVisibilityTitle}
                 </p>
+                <p className="text-xs text-muted-foreground">{t.clubs.admin.memberVisibilityHint}</p>
               </div>
-              <input type="hidden" name="allowMembersToViewOtherPayments" value={allowViewOthers ? "true" : "false"} />
+
+              <input type="hidden" name="allowMembersToViewOtherTurns" value={allowViewTurns ? "true" : "false"} />
               <div className="flex items-center justify-between gap-3 rounded-md border p-3">
                 <div className="flex flex-col gap-0.5">
-                  <Label htmlFor="allowMembersToViewOtherPayments">{t.clubs.admin.allowViewOtherPaymentsLabel}</Label>
-                  <p className="text-xs text-muted-foreground">{t.clubs.admin.allowViewOtherPaymentsHint}</p>
+                  <Label htmlFor="allowMembersToViewOtherTurns">{t.clubs.admin.viewOtherTurnsLabel}</Label>
+                  <p className="text-xs text-muted-foreground">{t.clubs.admin.viewOtherTurnsHint}</p>
                 </div>
                 <Switch
-                  id="allowMembersToViewOtherPayments"
-                  checked={allowViewOthers}
-                  onCheckedChange={setAllowViewOthers}
+                  id="allowMembersToViewOtherTurns"
+                  checked={allowViewTurns}
+                  onCheckedChange={setAllowViewTurns}
+                  disabled={!canEdit}
+                />
+              </div>
+
+              <input type="hidden" name="allowMembersToViewOtherNames" value={allowViewNames ? "true" : "false"} />
+              <div className="flex items-center justify-between gap-3 rounded-md border p-3">
+                <div className="flex flex-col gap-0.5">
+                  <Label htmlFor="allowMembersToViewOtherNames">{t.clubs.admin.viewOtherNamesLabel}</Label>
+                  <p className="text-xs text-muted-foreground">{t.clubs.admin.viewOtherNamesHint}</p>
+                </div>
+                <Switch
+                  id="allowMembersToViewOtherNames"
+                  checked={allowViewNames}
+                  onCheckedChange={setAllowViewNames}
+                  disabled={!canEdit}
+                />
+              </div>
+
+              <input
+                type="hidden"
+                name="allowMembersToViewOtherPayoutDates"
+                value={allowViewPayoutDates ? "true" : "false"}
+              />
+              <div className="flex items-center justify-between gap-3 rounded-md border p-3">
+                <div className="flex flex-col gap-0.5">
+                  <Label htmlFor="allowMembersToViewOtherPayoutDates">{t.clubs.admin.viewOtherPayoutDatesLabel}</Label>
+                  <p className="text-xs text-muted-foreground">{t.clubs.admin.viewOtherPayoutDatesHint}</p>
+                </div>
+                <Switch
+                  id="allowMembersToViewOtherPayoutDates"
+                  checked={allowViewPayoutDates}
+                  onCheckedChange={setAllowViewPayoutDates}
                   disabled={!canEdit}
                 />
               </div>

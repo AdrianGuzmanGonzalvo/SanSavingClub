@@ -358,7 +358,9 @@ export async function updateClubSettingsAction(
   const adminZelleInfo = String(formData.get("adminZelleInfo") ?? "").trim() || null;
   const adminCashAppInfo = String(formData.get("adminCashAppInfo") ?? "").trim() || null;
   const adminBankInfo = String(formData.get("adminBankInfo") ?? "").trim() || null;
-  const allowMembersToViewOtherPayments = String(formData.get("allowMembersToViewOtherPayments")) === "true";
+  const allowMembersToViewOtherTurns = String(formData.get("allowMembersToViewOtherTurns")) === "true";
+  const allowMembersToViewOtherNames = String(formData.get("allowMembersToViewOtherNames")) === "true";
+  const allowMembersToViewOtherPayoutDates = String(formData.get("allowMembersToViewOtherPayoutDates")) === "true";
 
   if (!name) return { error: t.clubs.new.errors.nameRequired };
   if (!Number.isFinite(quotaAmount) || quotaAmount <= 0) return { error: t.clubs.new.errors.invalidAmount };
@@ -398,7 +400,9 @@ export async function updateClubSettingsAction(
       adminZelleInfo,
       adminCashAppInfo,
       adminBankInfo,
-      allowMembersToViewOtherPayments,
+      allowMembersToViewOtherTurns,
+      allowMembersToViewOtherNames,
+      allowMembersToViewOtherPayoutDates,
     },
   });
 

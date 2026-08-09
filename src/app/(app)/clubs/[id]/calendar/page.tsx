@@ -3,7 +3,7 @@ import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { getDictionary, getLocale } from "@/lib/i18n/locale";
 import { interpolate } from "@/lib/i18n/format";
-import { computeMemberStatusForCycle } from "@/lib/club";
+import { buildAnonymousNumbering, computeMemberStatusForCycle, resolveMemberDisplayName } from "@/lib/club";
 import { ClubSubNav } from "../club-sub-nav";
 import { ClubCalendarClient, type CycleInfo } from "./calendar-client";
 
@@ -27,6 +27,21 @@ export default async function ClubCalendarPage({ params }: { params: Promise<{ i
   const isParticipant = club.members.some((m) => m.userId === currentUserId);
   if (!isParticipant && !isAdmin) notFound();
 
+  const anonymousNumbering = buildAnonymousNumbering(
+    club.members.map((m) => ({ userId: m.userId, joinedAt: m.joinedAt, isAdmin: m.userId === club.adminId }))
+  );
+  const displayNameFor = (member: { userId: string; user: { fullName: string } }): string =>
+    resolveMemberDisplayName({
+      targetUserId: member.userId,
+      targetFullName: member.user.fullName,
+      targetIsAdmin: member.userId === club.adminId,
+      viewerUserId: currentUserId,
+      viewerIsAdmin: isAdmin,
+      allowViewOtherNames: club.allowMembersToViewOtherNames,
+      anonymousNumbering,
+      anonymousLabel: (n: number) => interpolate(t.clubs.detail.anonymousMember, { n }),
+    });
+
   const cycles: CycleInfo[] = club.cycles.map(({ cycleNumber, paymentDueDate, payoutDate }) => {
     const paidMembers: string[] = [];
     const pendingMembers: string[] = [];
@@ -37,14 +52,20 @@ export default async function ClubCalendarPage({ params }: { params: Promise<{ i
         (r) => r.userId === member.userId && r.cycleNumber === cycleNumber
       );
       const status = computeMemberStatusForCycle(reports, paymentDueDate, club.gracePeriodDays);
-      if (status === "PAID") paidMembers.push(member.user.fullName);
-      else pendingMembers.push(member.user.fullName);
+      if (status === "PAID") paidMembers.push(displayNameFor(member));
+      else pendingMembers.push(displayNameFor(member));
       if (status === "OVERDUE") hasOverdue = true;
     }
 
     const dueColor: CycleInfo["dueColor"] = pendingMembers.length === 0 ? "green" : hasOverdue ? "red" : "amber";
 
     const payoutMember = club.members.find((m) => m.payoutTurn === cycleNumber);
+    const canSeeThisTurn =
+      !payoutMember ||
+      payoutMember.userId === currentUserId ||
+      isAdmin ||
+      payoutMember.userId === club.adminId ||
+      club.allowMembersToViewOtherTurns;
 
     return {
       cycle: cycleNumber,
@@ -53,7 +74,7 @@ export default async function ClubCalendarPage({ params }: { params: Promise<{ i
       dueColor,
       paidMembers,
       pendingMembers,
-      payoutMemberName: payoutMember?.user.fullName ?? null,
+      payoutMemberName: payoutMember && canSeeThisTurn ? displayNameFor(payoutMember) : null,
     };
   });
 
