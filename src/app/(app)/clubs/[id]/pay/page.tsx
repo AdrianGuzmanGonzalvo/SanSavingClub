@@ -50,6 +50,8 @@ export default async function ClubPayPage({ params }: { params: Promise<{ id: st
     <div className="flex flex-col gap-6">
       <ClubSubNav clubId={club.id} isAdmin={isAdmin} isParticipant={isParticipant} />
       <div className="mx-auto flex w-full max-w-2xl flex-col gap-4">
+        {isAdmin && <PaymentApprovalQueue clubId={club.id} reports={pendingReports} />}
+
         <Card>
           <CardHeader>
             <CardTitle className="text-base">{t.clubs.pay.instructionsTitle}</CardTitle>
@@ -99,8 +101,6 @@ export default async function ClubPayPage({ params }: { params: Promise<{ id: st
             paymentDueDay={club.paymentDueDay}
           />
         )}
-
-        {isAdmin && <PaymentApprovalQueue clubId={club.id} reports={pendingReports} />}
 
         {isAdmin && club.status === "ACTIVE" && (
           <AdminRecordPaymentCard clubId={club.id} quotaAmount={club.quotaAmount} members={payableMembers} />

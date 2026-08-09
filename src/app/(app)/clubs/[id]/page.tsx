@@ -1,5 +1,5 @@
 import { notFound } from "next/navigation";
-import { AlertTriangle, CalendarClock, CheckCircle2, Crown, Gift, HandCoins, Megaphone, RefreshCw, Sparkles, Users } from "lucide-react";
+import { AlertTriangle, CalendarClock, CheckCircle2, Crown, Gift, Megaphone, RefreshCw, Sparkles, Users } from "lucide-react";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { formatDate, formatUSD } from "@/lib/format";
@@ -10,11 +10,9 @@ import {
   computeMemberStatusForCycle,
   getCurrentCycleFromRows,
   resolveMemberDisplayName,
-  sumApprovedAmount,
 } from "@/lib/club";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import { ClubStatusBadge } from "@/components/club-status-badge";
 import { InviteCode } from "./invite-code";
@@ -76,11 +74,6 @@ export default async function ClubDetailPage({ params }: { params: Promise<{ id:
   const payoutDate = currentCycleRow?.payoutDate ?? null;
   const poolTotal = club.quotaAmount * club.members.length;
   const payoutAmount = currentCycleRow?.payoutAmount ?? poolTotal;
-
-  const currentCycleApproved = currentCycle
-    ? sumApprovedAmount(club.paymentReports.filter((r) => r.cycleNumber === currentCycle))
-    : 0;
-  const currentCycleProgressPct = poolTotal > 0 ? Math.min(100, Math.round((currentCycleApproved / poolTotal) * 100)) : 0;
 
   const canViewAllPayments = isAdmin;
 
@@ -177,39 +170,6 @@ export default async function ClubDetailPage({ params }: { params: Promise<{ id:
         )}
       </Card>
 
-      {currentCycle && cycleDueDate && (
-        <div className="grid gap-4 sm:grid-cols-3">
-          <Card>
-            <CardContent className="pt-6">
-              <p className="flex items-center gap-1.5 text-[0.85rem] font-medium text-muted-foreground">
-                <HandCoins className="h-3.5 w-3.5" /> {t.clubs.detail.collectedThisCycle}
-              </p>
-              <p className="mt-1 text-[1.65rem] font-bold tabular-nums text-primary">
-                {formatUSD(currentCycleApproved)}
-                <span className="text-base font-normal text-muted-foreground"> / {formatUSD(poolTotal)}</span>
-              </p>
-              <Progress value={currentCycleProgressPct} className="mt-3 h-2" />
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="pt-6">
-              <p className="flex items-center gap-1.5 text-[0.85rem] font-medium text-muted-foreground">
-                <Gift className="h-3.5 w-3.5" /> {t.clubs.detail.quotaLabel}
-              </p>
-              <p className="mt-1 text-[1.65rem] font-bold tabular-nums">{formatUSD(payoutAmount)}</p>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="pt-6">
-              <p className="flex items-center gap-1.5 text-[0.85rem] font-medium text-muted-foreground">
-                <CalendarClock className="h-3.5 w-3.5" /> {t.clubs.detail.nextCloseLabel}
-              </p>
-              <p className="mt-1 text-xl font-bold">{formatDate(cycleDueDate, locale)}</p>
-            </CardContent>
-          </Card>
-        </div>
-      )}
-
       {currentCycle && payoutDate && cycleDueDate && (
         <Card
           className="border-none text-white shadow-[0_8px_30px_-6px_rgba(4,61,46,0.5)]"
@@ -257,6 +217,17 @@ export default async function ClubDetailPage({ params }: { params: Promise<{ id:
                 <MarkPayoutButton clubId={club.id} />
               )}
             </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {currentCycle && cycleDueDate && (
+        <Card>
+          <CardContent className="pt-6">
+            <p className="flex items-center gap-1.5 text-[0.85rem] font-medium text-muted-foreground">
+              <CalendarClock className="h-3.5 w-3.5" /> {t.clubs.detail.nextCloseLabel}
+            </p>
+            <p className="mt-1 text-xl font-bold">{formatDate(cycleDueDate, locale)}</p>
           </CardContent>
         </Card>
       )}
