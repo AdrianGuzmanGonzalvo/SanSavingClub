@@ -8,6 +8,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { UserTrustBadge } from "@/components/user-trust-badge";
 import { ProfileDetailsForm } from "./profile-details-form";
 import { ChangePasswordForm } from "./change-password-form";
+import { TwoFactorSection } from "./two-factor-section";
 
 export default async function ProfilePage() {
   const t = getDictionary(await getLocale());
@@ -50,10 +51,18 @@ export default async function ProfilePage() {
           </Card>
         </TabsContent>
 
-        <TabsContent value="security" className="mt-4">
+        <TabsContent value="security" className="mt-4 flex flex-col gap-4">
           <Card>
             <CardContent className="pt-4">
               <ChangePasswordForm />
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base">{t.profile.twoFactorTitle}</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <TwoFactorSection enabled={user.twoFactorEnabled} />
             </CardContent>
           </Card>
         </TabsContent>

@@ -82,6 +82,15 @@ model User {
   trustTier           TrustTier @default(BRONZE)
   ratingsGiven        Rating[]  @relation("RatingAuthor")
   ratingsReceived     Rating[]  @relation("RatingTarget")
+
+  // Two-factor authentication (TOTP) — secret/backup codes only meaningful once enabled
+  twoFactorEnabled     Boolean  @default(false)
+  twoFactorSecret      String?
+  twoFactorBackupCodes String[] @default([])
+
+  // Forgot-password flow — token is stored hashed; raw token only ever exists in the emailed link
+  passwordResetTokenHash      String?
+  passwordResetTokenExpiresAt DateTime?
 }
 
 model Rating {

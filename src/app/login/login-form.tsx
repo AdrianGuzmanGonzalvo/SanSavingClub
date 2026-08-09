@@ -2,8 +2,9 @@
 
 import { useActionState } from "react";
 import Link from "next/link";
-import { Loader2, LogIn, Mail } from "lucide-react";
+import { KeyRound, Loader2, LogIn, Mail } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { IconInput } from "@/components/icon-input";
@@ -33,9 +34,31 @@ export function LoginForm({ callbackUrl }: { callbackUrl: string }) {
             <IconInput icon={Mail} id="email" name="email" type="email" required autoComplete="email" />
           </div>
           <div className="flex flex-col gap-2">
-            <Label htmlFor="password">{t.auth.login.password}</Label>
+            <div className="flex items-center justify-between">
+              <Label htmlFor="password">{t.auth.login.password}</Label>
+              <Link href="/forgot-password" className="text-xs text-primary underline-offset-4 hover:underline">
+                {t.auth.login.forgotPassword}
+              </Link>
+            </div>
             <PasswordInput id="password" name="password" required autoComplete="current-password" />
           </div>
+          {state.requiresTwoFactor && (
+            <div className="flex flex-col gap-2">
+              <Label htmlFor="code" className="flex items-center gap-1.5">
+                <KeyRound className="h-3.5 w-3.5" /> {t.auth.login.twoFactorCodeLabel}
+              </Label>
+              <Input
+                id="code"
+                name="code"
+                inputMode="text"
+                autoComplete="one-time-code"
+                placeholder={t.auth.login.twoFactorCodePlaceholder}
+                autoFocus
+                required
+              />
+              <p className="text-xs text-muted-foreground">{t.auth.login.twoFactorCodeHint}</p>
+            </div>
+          )}
           {state.error && <p className="text-sm text-destructive">{state.error}</p>}
           <Button type="submit" disabled={isPending} className="mt-2">
             {isPending ? <Loader2 className="animate-spin" /> : <LogIn />}
