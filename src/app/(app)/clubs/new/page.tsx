@@ -20,15 +20,6 @@ type DurationUnit = "WEEK" | "MONTH";
 type ClubMode = "new" | "existing";
 type Frequency = "WEEKLY" | "BI_WEEKLY" | "EVERY_OTHER_WEEK" | "MONTHLY";
 
-const COUNT_OPTIONS: Record<DurationUnit, number[]> = {
-  MONTH: Array.from({ length: 24 }, (_, i) => i + 1),
-  WEEK: Array.from({ length: 52 }, (_, i) => i + 1),
-};
-
-const DEFAULT_COUNT: Record<DurationUnit, number> = { MONTH: 12, WEEK: 12 };
-const DEFAULT_DUE_DAY: Record<DurationUnit, number> = { MONTH: 1, WEEK: 5 };
-const DEFAULT_PAYOUT_DAY: Record<DurationUnit, number> = { MONTH: 5, WEEK: 0 };
-
 function toISODate(date: Date | undefined): string {
   if (!date) return "";
   const offset = date.getTimezoneOffset();
@@ -42,9 +33,8 @@ export default function NewClubPage() {
   const [mode, setMode] = useState<ClubMode>("new");
   const [unit, setUnit] = useState<DurationUnit>("MONTH");
   const [frequency, setFrequency] = useState<Frequency>("WEEKLY");
-  const [count, setCount] = useState(String(DEFAULT_COUNT.MONTH));
-  const [paymentDueDay, setPaymentDueDay] = useState(String(DEFAULT_DUE_DAY.MONTH));
-  const [payoutDay, setPayoutDay] = useState(String(DEFAULT_PAYOUT_DAY.MONTH));
+  const [quotaAmount, setQuotaAmount] = useState("");
+  const [totalAmount, setTotalAmount] = useState("");
   const [startCycleNumber, setStartCycleNumber] = useState("1");
   const [currentDueDate, setCurrentDueDate] = useState<Date | undefined>(undefined);
   const [currentPayoutDate, setCurrentPayoutDate] = useState<Date | undefined>(undefined);
@@ -53,15 +43,17 @@ export default function NewClubPage() {
   function handleUnitChange(next: DurationUnit) {
     setUnit(next);
     setFrequency(next === "WEEK" ? "WEEKLY" : "MONTHLY");
-    setCount(String(DEFAULT_COUNT[next]));
-    setPaymentDueDay(String(DEFAULT_DUE_DAY[next]));
-    setPayoutDay(String(DEFAULT_PAYOUT_DAY[next]));
     setStartCycleNumber("1");
   }
 
-  const countLabel = (n: number) => interpolate(unit === "WEEK" ? t.clubs.new.weeks : t.clubs.new.months, { n });
-  const dueDayHint = unit === "WEEK" ? t.clubs.new.paymentDueDayHintWeek : t.clubs.new.paymentDueDayHintMonth;
-  const payoutDayHint = unit === "WEEK" ? t.clubs.new.payoutDayHintWeek : t.clubs.new.payoutDayHintMonth;
+  // The leader enters quota + total instead of picking a member count directly —
+  // the number of members/turns the club needs falls out of total ÷ quota.
+  const quotaNum = Number(quotaAmount);
+  const totalNum = Number(totalAmount);
+  const rawCount = quotaNum > 0 && totalNum > 0 ? totalNum / quotaNum : 0;
+  const isDivisible = rawCount > 0 && Math.abs(rawCount - Math.round(rawCount)) < 1e-6;
+  const computedCount = isDivisible ? Math.round(rawCount) : 0;
+  const countForCycleSelect = computedCount > 0 ? computedCount : 1;
 
   return (
     <div className="mx-auto max-w-md">
@@ -108,55 +100,59 @@ export default function NewClubPage() {
               <Input id="name" name="name" placeholder={t.clubs.new.namePlaceholder} required />
             </div>
 
-            <div className="flex flex-col gap-2">
-              <Label htmlFor="quotaAmount">{t.clubs.new.quotaAmount}</Label>
-              <Input
-                id="quotaAmount"
-                name="quotaAmount"
-                type="number"
-                min="1"
-                step="0.01"
-                placeholder="100.00"
-                required
-              />
-            </div>
-
             <div className="grid grid-cols-2 gap-4">
               <div className="flex flex-col gap-2">
-                <Label htmlFor="durationUnit">{t.clubs.new.durationUnit}</Label>
-                <input type="hidden" name="durationUnit" value={unit} />
-                <Select value={unit} onValueChange={(v) => handleUnitChange(v as DurationUnit)}>
-                  <SelectTrigger id="durationUnit" className="w-full">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="WEEK">{t.clubs.new.unitWeek}</SelectItem>
-                    <SelectItem value="MONTH">{t.clubs.new.unitMonth}</SelectItem>
-                  </SelectContent>
-                </Select>
+                <Label htmlFor="quotaAmount">{t.clubs.new.quotaAmount}</Label>
+                <Input
+                  id="quotaAmount"
+                  name="quotaAmount"
+                  type="number"
+                  min="1"
+                  step="0.01"
+                  placeholder="100.00"
+                  value={quotaAmount}
+                  onChange={(e) => setQuotaAmount(e.target.value)}
+                  required
+                />
               </div>
               <div className="flex flex-col gap-2">
-                <Label htmlFor="durationCount">{t.clubs.new.duration}</Label>
-                <input type="hidden" name="durationCount" value={count} />
-                <Select
-                  value={count}
-                  onValueChange={(v) => {
-                    setCount(v);
+                <Label htmlFor="totalAmount">{t.clubs.new.totalAmount}</Label>
+                <Input
+                  id="totalAmount"
+                  name="totalAmount"
+                  type="number"
+                  min="1"
+                  step="0.01"
+                  placeholder={t.clubs.new.totalAmountPlaceholder}
+                  value={totalAmount}
+                  onChange={(e) => {
+                    setTotalAmount(e.target.value);
                     setStartCycleNumber("1");
                   }}
-                >
-                  <SelectTrigger id="durationCount" className="w-full">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {COUNT_OPTIONS[unit].map((n) => (
-                      <SelectItem key={n} value={String(n)}>
-                        {countLabel(n)}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                  required
+                />
               </div>
+            </div>
+            <p className="-mt-2 text-xs text-muted-foreground">
+              {totalAmount && quotaAmount
+                ? isDivisible
+                  ? interpolate(t.clubs.new.totalAmountComputedLabel, { n: computedCount })
+                  : t.clubs.new.errors.totalNotDivisible
+                : t.clubs.new.totalAmountHint}
+            </p>
+
+            <div className="flex flex-col gap-2">
+              <Label htmlFor="durationUnit">{t.clubs.new.durationUnit}</Label>
+              <input type="hidden" name="durationUnit" value={unit} />
+              <Select value={unit} onValueChange={(v) => handleUnitChange(v as DurationUnit)}>
+                <SelectTrigger id="durationUnit" className="w-full">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="WEEK">{t.clubs.new.unitWeek}</SelectItem>
+                  <SelectItem value="MONTH">{t.clubs.new.unitMonth}</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
 
             {unit === "WEEK" && (
@@ -180,65 +176,18 @@ export default function NewClubPage() {
               <>
                 <div className="grid grid-cols-2 gap-4">
                   <div className="flex flex-col gap-2">
-                    <Label htmlFor="paymentDueDay">{t.clubs.new.paymentDueDay}</Label>
-                    <input type="hidden" name="paymentDueDay" value={paymentDueDay} />
-                    {unit === "WEEK" ? (
-                      <Select value={paymentDueDay} onValueChange={setPaymentDueDay}>
-                        <SelectTrigger id="paymentDueDay" className="w-full">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {t.common.weekdays.map((day, i) => (
-                            <SelectItem key={day} value={String(i)}>
-                              {day}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    ) : (
-                      <Input
-                        id="paymentDueDay"
-                        type="number"
-                        min="1"
-                        max="28"
-                        value={paymentDueDay}
-                        onChange={(e) => setPaymentDueDay(e.target.value)}
-                        required
-                      />
-                    )}
+                    <Label>{t.clubs.new.firstCycleDueDateLabel}</Label>
+                    <input type="hidden" name="currentCycleDueDate" value={toISODate(currentDueDate)} />
+                    <DatePicker value={currentDueDate} onChange={setCurrentDueDate} />
                   </div>
                   <div className="flex flex-col gap-2">
-                    <Label htmlFor="payoutDay">{t.clubs.new.payoutDay}</Label>
-                    <input type="hidden" name="payoutDay" value={payoutDay} />
-                    {unit === "WEEK" ? (
-                      <Select value={payoutDay} onValueChange={setPayoutDay}>
-                        <SelectTrigger id="payoutDay" className="w-full">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {t.common.weekdays.map((day, i) => (
-                            <SelectItem key={day} value={String(i)}>
-                              {day}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    ) : (
-                      <Input
-                        id="payoutDay"
-                        type="number"
-                        min="1"
-                        max="28"
-                        value={payoutDay}
-                        onChange={(e) => setPayoutDay(e.target.value)}
-                        required
-                      />
-                    )}
+                    <Label>{t.clubs.new.firstCyclePayoutDateLabel}</Label>
+                    <input type="hidden" name="currentCyclePayoutDate" value={toISODate(currentPayoutDate)} />
+                    <DatePicker value={currentPayoutDate} onChange={setCurrentPayoutDate} />
                   </div>
                 </div>
-                <p className="-mt-2 text-xs text-muted-foreground">
-                  {dueDayHint} {payoutDayHint}
-                </p>
+                <input type="hidden" name="startCycleNumber" value="1" />
+                <p className="-mt-2 text-xs text-muted-foreground">{t.clubs.new.firstDatesHint}</p>
               </>
             ) : (
               <div className="flex flex-col gap-4 rounded-lg border border-dashed p-3">
@@ -250,9 +199,9 @@ export default function NewClubPage() {
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      {Array.from({ length: Number(count) || 1 }, (_, i) => i + 1).map((n) => (
+                      {Array.from({ length: countForCycleSelect }, (_, i) => i + 1).map((n) => (
                         <SelectItem key={n} value={String(n)}>
-                          {interpolate(t.clubs.new.currentCycleOption, { n, total: count })}
+                          {interpolate(t.clubs.new.currentCycleOption, { n, total: countForCycleSelect })}
                         </SelectItem>
                       ))}
                     </SelectContent>

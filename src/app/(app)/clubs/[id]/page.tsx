@@ -130,7 +130,10 @@ export default async function ClubDetailPage({ params }: { params: Promise<{ id:
               <CardTitle className="text-xl">{club.name}</CardTitle>
               <p className="text-sm text-muted-foreground">
                 {interpolate(t.dashboard.perMonth, { amount: formatUSD(club.quotaAmount) })} &middot;{" "}
-                {formatClubDuration(t, club.durationUnit, club.durationCount)} &middot;{" "}
+                {interpolate(t.clubs.detail.totalClubAmount, {
+                  amount: formatUSD(club.quotaAmount * club.durationCount),
+                })}{" "}
+                &middot; {formatClubDuration(t, club.durationUnit, club.durationCount)} &middot;{" "}
                 {interpolate(t.clubs.detail.adminLabel, { name: club.admin.fullName })}
               </p>
               <p className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">

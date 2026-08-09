@@ -78,8 +78,8 @@ export async function createClubAction(_prevState: ClubFormState, formData: Form
 
   const name = String(formData.get("name") ?? "").trim();
   const quotaAmount = Number(formData.get("quotaAmount"));
+  const totalAmount = Number(formData.get("totalAmount"));
   const durationUnit = String(formData.get("durationUnit") ?? "") as DurationUnit;
-  const durationCount = Number(formData.get("durationCount"));
   const lateFeeAmount = Number(formData.get("lateFeeAmount") || 0);
   const mode = String(formData.get("mode") ?? "new");
   const isPreExisting = mode === "existing";
@@ -87,9 +87,16 @@ export async function createClubAction(_prevState: ClubFormState, formData: Form
 
   if (!name) return { error: t.clubs.new.errors.nameRequired };
   if (!Number.isFinite(quotaAmount) || quotaAmount <= 0) return { error: t.clubs.new.errors.invalidAmount };
+  if (!Number.isFinite(totalAmount) || totalAmount <= 0) return { error: t.clubs.new.errors.invalidAmount };
   if (!ALLOWED_UNITS.includes(durationUnit)) return { error: t.clubs.new.errors.invalidDuration };
+
+  const rawDurationCount = totalAmount / quotaAmount;
+  const durationCount = Math.round(rawDurationCount);
+  if (Math.abs(rawDurationCount - durationCount) > 1e-6) {
+    return { error: t.clubs.new.errors.totalNotDivisible };
+  }
   const [countMin, countMax] = DURATION_COUNT_BOUNDS[durationUnit];
-  if (!Number.isInteger(durationCount) || durationCount < countMin || durationCount > countMax) {
+  if (durationCount < countMin || durationCount > countMax) {
     return { error: t.clubs.new.errors.invalidDuration };
   }
   if (!Number.isFinite(lateFeeAmount) || lateFeeAmount < 0) return { error: t.clubs.new.errors.invalidAmount };
@@ -102,44 +109,28 @@ export async function createClubAction(_prevState: ClubFormState, formData: Form
         })()
       : "MONTHLY";
 
-  let paymentDueDay: number;
-  let payoutDay: number;
-  let startDate: Date | null = null;
-  let startCycleNumber = 1;
-  let currentCycleDueDate: Date | null = null;
-  let currentCyclePayoutDate: Date | null = null;
-
-  if (isPreExisting) {
-    startCycleNumber = Number(formData.get("startCycleNumber"));
-    if (!Number.isInteger(startCycleNumber) || startCycleNumber < 1 || startCycleNumber > durationCount) {
-      return { error: t.clubs.new.errors.invalidStartCycle };
-    }
-    const dueDateRaw = String(formData.get("currentCycleDueDate") ?? "");
-    const payoutDateRaw = String(formData.get("currentCyclePayoutDate") ?? "");
-    currentCycleDueDate = dueDateRaw ? new Date(dueDateRaw) : null;
-    currentCyclePayoutDate = payoutDateRaw ? new Date(payoutDateRaw) : null;
-    if (
-      !currentCycleDueDate ||
-      Number.isNaN(currentCycleDueDate.getTime()) ||
-      !currentCyclePayoutDate ||
-      Number.isNaN(currentCyclePayoutDate.getTime())
-    ) {
-      return { error: t.clubs.new.errors.datesRequired };
-    }
-    paymentDueDay = durationUnit === "WEEK" ? currentCycleDueDate.getDay() : currentCycleDueDate.getDate();
-    payoutDay = durationUnit === "WEEK" ? currentCyclePayoutDate.getDay() : currentCyclePayoutDate.getDate();
-    startDate = subtractCycles(currentCycleDueDate, startCycleNumber - 1, durationUnit, frequency);
-  } else {
-    paymentDueDay = Number(formData.get("paymentDueDay"));
-    payoutDay = Number(formData.get("payoutDay"));
-    const [dayMin, dayMax] = DUE_DAY_BOUNDS[durationUnit];
-    if (!Number.isInteger(paymentDueDay) || paymentDueDay < dayMin || paymentDueDay > dayMax) {
-      return { error: t.clubs.new.errors.invalidDueDay };
-    }
-    if (!Number.isInteger(payoutDay) || payoutDay < dayMin || payoutDay > dayMax) {
-      return { error: t.clubs.new.errors.invalidPayoutDay };
-    }
+  // Both a brand-new club (always cycle 1) and a migrated ongoing club (whichever
+  // cycle the leader says it's currently on) anchor their schedule to a real,
+  // leader-picked calendar date rather than a bare day-of-month/week number.
+  const startCycleNumber = isPreExisting ? Number(formData.get("startCycleNumber")) : 1;
+  if (!Number.isInteger(startCycleNumber) || startCycleNumber < 1 || startCycleNumber > durationCount) {
+    return { error: t.clubs.new.errors.invalidStartCycle };
   }
+  const dueDateRaw = String(formData.get("currentCycleDueDate") ?? "");
+  const payoutDateRaw = String(formData.get("currentCyclePayoutDate") ?? "");
+  const currentCycleDueDate = dueDateRaw ? new Date(dueDateRaw) : null;
+  const currentCyclePayoutDate = payoutDateRaw ? new Date(payoutDateRaw) : null;
+  if (
+    !currentCycleDueDate ||
+    Number.isNaN(currentCycleDueDate.getTime()) ||
+    !currentCyclePayoutDate ||
+    Number.isNaN(currentCyclePayoutDate.getTime())
+  ) {
+    return { error: t.clubs.new.errors.datesRequired };
+  }
+  const paymentDueDay = durationUnit === "WEEK" ? currentCycleDueDate.getDay() : currentCycleDueDate.getDate();
+  const payoutDay = durationUnit === "WEEK" ? currentCyclePayoutDate.getDay() : currentCyclePayoutDate.getDate();
+  const startDate = subtractCycles(currentCycleDueDate, startCycleNumber - 1, durationUnit, frequency);
 
   let inviteCode = generateInviteCode();
   for (let attempt = 0; attempt < 5; attempt++) {
@@ -160,7 +151,7 @@ export async function createClubAction(_prevState: ClubFormState, formData: Form
       lateFeeAmount,
       isPreExisting,
       startCycleNumber,
-      startDate: startDate ?? undefined,
+      startDate,
       inviteCode,
       adminId: session.user.id,
       ...(adminParticipates
@@ -169,23 +160,21 @@ export async function createClubAction(_prevState: ClubFormState, formData: Form
     },
   });
 
-  // Pre-existing clubs already know their schedule, so generate cycle rows
-  // immediately instead of waiting for activation (which still requires
-  // turns to be assigned first).
-  if (isPreExisting && startDate && currentCycleDueDate && currentCyclePayoutDate) {
-    const rows = getAllCycleDates({ startDate, durationUnit, durationCount, paymentDueDay, payoutDay, frequency });
-    await prisma.clubCycle.createMany({
-      data: rows.map(({ cycle, dueDate, payoutDate }) => ({
-        clubId: club.id,
-        cycleNumber: cycle,
-        // The formula anchor can drift slightly (e.g. clamped month-end days) — the
-        // leader-entered date for their current cycle always wins over the formula.
-        paymentDueDate: cycle === startCycleNumber ? currentCycleDueDate : dueDate,
-        payoutDate: cycle === startCycleNumber ? currentCyclePayoutDate : payoutDate,
-        isCompleted: cycle < startCycleNumber,
-      })),
-    });
-  }
+  // The leader already picked real calendar dates for the current/first cycle,
+  // so generate every cycle row now instead of waiting for activation (which
+  // still requires turns to be assigned first).
+  const rows = getAllCycleDates({ startDate, durationUnit, durationCount, paymentDueDay, payoutDay, frequency });
+  await prisma.clubCycle.createMany({
+    data: rows.map(({ cycle, dueDate, payoutDate }) => ({
+      clubId: club.id,
+      cycleNumber: cycle,
+      // The formula anchor can drift slightly (e.g. clamped month-end days) — the
+      // leader-entered date for their current cycle always wins over the formula.
+      paymentDueDate: cycle === startCycleNumber ? currentCycleDueDate : dueDate,
+      payoutDate: cycle === startCycleNumber ? currentCyclePayoutDate : payoutDate,
+      isCompleted: cycle < startCycleNumber,
+    })),
+  });
 
   // Creating a club promotes a plain member to the "Community Leader" tier.
   await prisma.user.updateMany({
