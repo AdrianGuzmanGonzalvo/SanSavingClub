@@ -1,0 +1,71 @@
+workflows:
+  android-release:
+    name: Android Release
+    max_build_duration: 30
+    instance_type: linux_x2
+    environment:
+      groups:
+        - google_play
+      vars:
+        PACKAGE_NAME: "com.sansavingclub.app"
+      node: latest
+    triggering:
+      events:
+        - tag
+    scripts:
+      - name: Install dependencies
+        script: npm ci
+      - name: Sync Capacitor
+        script: npx cap sync android
+      - name: Build Android release AAB
+        script: |
+          cd android
+          ./gradlew bundleRelease
+    artifacts:
+      - android/app/build/outputs/**/*.aab
+    publishing:
+      google_play:
+        credentials: $GCLOUD_SERVICE_ACCOUNT_CREDENTIALS
+        track: internal
+
+  ios-release:
+    name: iOS Release
+    max_build_duration: 60
+    instance_type: mac_mini_m2
+    integrations:
+      app_store_connect: sansavingclub_asc
+    environment:
+      ios_signing:
+        distribution_type: app_store
+        bundle_identifier: com.sansavingclub.app
+      vars:
+        XCODE_WORKSPACE: "ios/App/App.xcworkspace"
+        XCODE_SCHEME: "App"
+      node: latest
+      xcode: latest
+      cocoapods: default
+    triggering:
+      events:
+        - tag
+    scripts:
+      - name: Install dependencies
+        script: npm ci
+      - name: Sync Capacitor
+        script: npx cap sync ios
+      - name: Install CocoaPods dependencies
+        script: |
+          cd ios/App
+          pod install
+      - name: Set up code signing
+        script: xcode-project use-profiles
+      - name: Build ipa
+        script: |
+          xcode-project build-ipa \
+            --workspace "$XCODE_WORKSPACE" \
+            --scheme "$XCODE_SCHEME"
+    artifacts:
+      - build/ios/ipa/*.ipa
+    publishing:
+      app_store_connect:
+        auth: integration
+        submit_to_testflight: true
