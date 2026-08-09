@@ -33,9 +33,11 @@ const TIER_CONFIG: Record<TrustTier, { icon: typeof Trophy; className: string }>
 export function UserTrustBadge({
   stats,
   variant = "compact",
+  tone = "default",
 }: {
   stats: TrustStats;
   variant?: "compact" | "full";
+  tone?: "default" | "onDark";
 }) {
   const { dict: t } = useI18n();
   const config = TIER_CONFIG[stats.trustTier];
@@ -48,7 +50,9 @@ export function UserTrustBadge({
           <Icon className="h-3 w-3" />
           {t.common.trustTiers[stats.trustTier]}
         </Badge>
-        <span className="flex items-center gap-0.5 text-xs text-muted-foreground">
+        <span
+          className={`flex items-center gap-0.5 text-xs ${tone === "onDark" ? "text-white/90" : "text-muted-foreground"}`}
+        >
           <Star className="h-3 w-3 fill-current text-amber-500" />
           {stats.averageRating.toFixed(1)}
         </span>

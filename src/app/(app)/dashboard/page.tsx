@@ -95,16 +95,14 @@ export default async function DashboardPage() {
       <Card className="relative overflow-hidden border-none bg-gradient-to-br from-emerald-600 via-teal-700 to-indigo-800 text-white shadow-lg">
         <div className="pointer-events-none absolute -top-16 -right-16 h-56 w-56 rounded-full bg-white/10 blur-3xl" />
         <div className="pointer-events-none absolute -bottom-20 -left-10 h-56 w-56 rounded-full bg-emerald-300/10 blur-3xl" />
-        <CardContent className="relative flex flex-col gap-1">
-          <h1 className="text-2xl font-bold tracking-tight text-white">{t.dashboard.title}</h1>
+        <CardContent className="relative flex flex-col gap-2">
+          <div className="flex items-start justify-between gap-3">
+            <h1 className="text-2xl font-bold tracking-tight text-white">{t.dashboard.title}</h1>
+            <UserTrustBadge variant="compact" tone="onDark" stats={currentUser} />
+          </div>
           <p className="text-white/80">{interpolate(t.dashboard.welcome, { name: session!.user.name ?? "" })}</p>
         </CardContent>
       </Card>
-
-      <div className="flex w-full max-w-md flex-col gap-2">
-        <span className="text-sm font-medium">{t.reputation.yourReputation}</span>
-        <UserTrustBadge variant="full" stats={currentUser} />
-      </div>
 
       <div className="flex flex-col gap-3">
         <div className="flex flex-col gap-3 sm:flex-row">
