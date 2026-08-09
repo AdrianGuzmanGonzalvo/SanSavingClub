@@ -1,5 +1,5 @@
 import { notFound } from "next/navigation";
-import { AlertTriangle, CalendarClock, CheckCircle2, Gift, Megaphone, RefreshCw, Sparkles, Users } from "lucide-react";
+import { AlertTriangle, CalendarClock, CheckCircle2, Crown, Gift, HandCoins, Megaphone, RefreshCw, Sparkles, Users } from "lucide-react";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { formatDate, formatUSD } from "@/lib/format";
@@ -178,8 +178,8 @@ export default async function ClubDetailPage({ params }: { params: Promise<{ id:
         <div className="grid gap-4 sm:grid-cols-3">
           <Card>
             <CardContent className="pt-6">
-              <p className="text-[0.85rem] font-medium text-muted-foreground">
-                {t.clubs.detail.collectedThisCycle}
+              <p className="flex items-center gap-1.5 text-[0.85rem] font-medium text-muted-foreground">
+                <HandCoins className="h-3.5 w-3.5" /> {t.clubs.detail.collectedThisCycle}
               </p>
               <p className="mt-1 text-[1.65rem] font-bold tabular-nums text-primary">
                 {formatUSD(currentCycleApproved)}
@@ -190,13 +190,17 @@ export default async function ClubDetailPage({ params }: { params: Promise<{ id:
           </Card>
           <Card>
             <CardContent className="pt-6">
-              <p className="text-[0.85rem] font-medium text-muted-foreground">{t.clubs.detail.quotaLabel}</p>
+              <p className="flex items-center gap-1.5 text-[0.85rem] font-medium text-muted-foreground">
+                <Gift className="h-3.5 w-3.5" /> {t.clubs.detail.quotaLabel}
+              </p>
               <p className="mt-1 text-[1.65rem] font-bold tabular-nums">{formatUSD(payoutAmount)}</p>
             </CardContent>
           </Card>
           <Card>
             <CardContent className="pt-6">
-              <p className="text-[0.85rem] font-medium text-muted-foreground">{t.clubs.detail.nextCloseLabel}</p>
+              <p className="flex items-center gap-1.5 text-[0.85rem] font-medium text-muted-foreground">
+                <CalendarClock className="h-3.5 w-3.5" /> {t.clubs.detail.nextCloseLabel}
+              </p>
               <p className="mt-1 text-xl font-bold">{formatDate(cycleDueDate, locale)}</p>
             </CardContent>
           </Card>
@@ -344,8 +348,8 @@ export default async function ClubDetailPage({ params }: { params: Promise<{ id:
                       <span className="truncate text-sm font-medium">{memberDisplayName}</span>
                       {isSelf && <span className="text-xs text-muted-foreground">{t.clubs.detail.you}</span>}
                       {isClubMemberAdmin && (
-                        <span className="rounded-full bg-indigo-100 px-1.5 py-0.5 text-[10px] font-semibold text-indigo-700 dark:bg-indigo-950 dark:text-indigo-300">
-                          {t.clubs.detail.adminTag}
+                        <span className="flex items-center gap-0.5 rounded-full bg-indigo-100 px-1.5 py-0.5 text-[10px] font-semibold text-indigo-700 dark:bg-indigo-950 dark:text-indigo-300">
+                          <Crown className="h-2.5 w-2.5" /> {t.clubs.detail.adminTag}
                         </span>
                       )}
                       {member.payoutPaid && (

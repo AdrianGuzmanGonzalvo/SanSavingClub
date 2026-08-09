@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { ArrowRight, Link2, Plus, Users, Wallet } from "lucide-react";
+import { ArrowRight, Link2, Plus, Shield, Users, Wallet } from "lucide-react";
+import type { LucideIcon } from "lucide-react";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { formatDate, formatUSD } from "@/lib/format";
@@ -125,6 +126,7 @@ export default async function DashboardPage() {
             emptyMessage={t.dashboard.noManagedClubs}
             clubs={managedClubs}
             t={t}
+            icon={Shield}
           />
         )}
         {joinedClubs.length > 0 && (
@@ -133,6 +135,7 @@ export default async function DashboardPage() {
             emptyMessage={t.dashboard.noJoinedClubs}
             clubs={joinedClubs}
             t={t}
+            icon={Users}
           />
         )}
       </div>
@@ -187,15 +190,19 @@ function ClubSection({
   emptyMessage,
   clubs,
   t,
+  icon: Icon,
 }: {
   title: string;
   emptyMessage: string;
   clubs: ClubCard[];
   t: Dictionary;
+  icon: LucideIcon;
 }) {
   return (
     <div className="flex flex-col gap-3">
-      <h2 className="text-lg font-semibold">{title}</h2>
+      <h2 className="flex items-center gap-1.5 text-lg font-semibold">
+        <Icon className="h-4 w-4 text-primary" /> {title}
+      </h2>
       {clubs.length === 0 ? (
         <Card>
           <CardContent className="flex flex-col items-center gap-2 py-10 text-center text-muted-foreground">

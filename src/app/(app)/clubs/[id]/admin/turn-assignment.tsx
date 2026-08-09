@@ -3,7 +3,7 @@
 import { useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { CheckCircle2, Shuffle, X } from "lucide-react";
+import { CheckCircle2, Crown, Shuffle, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -71,8 +71,8 @@ export function TurnAssignmentSection({
               <span className="text-sm">
                 {member.fullName}
                 {member.isAdmin && (
-                  <span className="ml-1.5 rounded-full bg-indigo-100 px-1.5 py-0.5 text-[10px] font-semibold text-indigo-700 dark:bg-indigo-950 dark:text-indigo-300">
-                    {t.clubs.detail.adminTag}
+                  <span className="ml-1.5 inline-flex items-center gap-0.5 rounded-full bg-indigo-100 px-1.5 py-0.5 text-[10px] font-semibold text-indigo-700 dark:bg-indigo-950 dark:text-indigo-300">
+                    <Crown className="h-2.5 w-2.5" /> {t.clubs.detail.adminTag}
                   </span>
                 )}
                 {member.payoutPaid && (
