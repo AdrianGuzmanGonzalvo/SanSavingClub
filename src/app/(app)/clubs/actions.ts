@@ -637,11 +637,18 @@ export async function randomizeTurnsAction(clubId: string): Promise<ClubFormStat
   if (club.adminId !== session.user.id) return { error: t.clubs.detail.errors.adminOnly };
   if (club.status !== "PENDING") return { error: t.clubs.detail.errors.notPending };
 
-  const shuffled = shuffle(club.members);
+  // Only fill in turns for members who don't have one yet — members with a
+  // turn already set (assigned manually, or from a previous draw) keep it.
+  const unassignedMembers = club.members.filter((m) => m.payoutTurn === null);
+  const takenTurns = new Set(club.members.map((m) => m.payoutTurn).filter((n): n is number => n !== null));
+  const availableTurns = Array.from({ length: club.durationCount }, (_, i) => i + 1).filter(
+    (n) => !takenTurns.has(n)
+  );
+  const shuffledMembers = shuffle(unassignedMembers);
 
   await prisma.$transaction(
-    shuffled.map((member, index) =>
-      prisma.clubMember.update({ where: { id: member.id }, data: { payoutTurn: index + 1 } })
+    shuffledMembers.map((member, index) =>
+      prisma.clubMember.update({ where: { id: member.id }, data: { payoutTurn: availableTurns[index] } })
     )
   );
 

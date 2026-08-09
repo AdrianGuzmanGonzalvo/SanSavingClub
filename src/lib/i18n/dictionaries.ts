@@ -405,7 +405,7 @@ export const en = {
       randomize: "Randomize Turns (Sorteo Digital)",
       randomizeConfirmTitle: "Run a transparent random draw?",
       randomizeConfirmDescription:
-        "This will randomly assign a payout turn to every current member, overwriting any turns already set. Everyone in the club will see the same result.",
+        "This will randomly assign the remaining payout turns to members who don't have one yet. Turns already set are left as they are. Everyone in the club will see the same result.",
       randomizeConfirmButton: "Draw turns",
       randomizedToast: "Turns assigned by random draw.",
       queueTitle: "Payment approval queue",
@@ -1055,7 +1055,7 @@ export const es: typeof en = {
       randomize: "Sorteo Transparente (Sorteo Digital)",
       randomizeConfirmTitle: "¿Realizar un sorteo aleatorio transparente?",
       randomizeConfirmDescription:
-        "Esto asignará aleatoriamente un turno de pago a cada miembro actual, sobrescribiendo los turnos ya establecidos. Todos en el club verán el mismo resultado.",
+        "Esto asignará aleatoriamente los turnos restantes a los miembros que todavía no tienen uno. Los turnos ya establecidos se dejan como están. Todos en el club verán el mismo resultado.",
       randomizeConfirmButton: "Sortear turnos",
       randomizedToast: "Turnos asignados por sorteo aleatorio.",
       queueTitle: "Cola de aprobación de pagos",
