@@ -3,7 +3,7 @@ import Link from "next/link";
 import { BarChart3, Building2, Contact, Gift, HandCoins, Users, Wallet } from "lucide-react";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
-import { formatUSD } from "@/lib/format";
+import { formatDate, formatUSD } from "@/lib/format";
 import { getDictionary, getLocale } from "@/lib/i18n/locale";
 import { interpolate } from "@/lib/i18n/format";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -13,7 +13,8 @@ import { ClubStatusBadge } from "@/components/club-status-badge";
 import { ContactsExportButton } from "./contacts-export-button";
 
 export default async function ReportsPage() {
-  const t = getDictionary(await getLocale());
+  const locale = await getLocale();
+  const t = getDictionary(locale);
   const session = await auth();
   if (!session?.user) redirect("/login");
   const userId = session.user.id;
@@ -36,6 +37,7 @@ export default async function ReportsPage() {
     const paidOut = club.cycles
       .filter((c) => c.isCompleted)
       .reduce((sum, c) => sum + (c.payoutAmount ?? club.quotaAmount * club.members.length), 0);
+    const endDate = club.cycles.find((c) => c.cycleNumber === club.durationCount)?.payoutDate ?? null;
     return {
       clubId: club.id,
       name: club.name,
@@ -44,6 +46,8 @@ export default async function ReportsPage() {
       totalTarget,
       received,
       paidOut,
+      startDate: club.startDate,
+      endDate,
     };
   });
 
@@ -161,6 +165,8 @@ export default async function ReportsPage() {
                   <TableRow>
                     <TableHead>{t.reports.tableClub}</TableHead>
                     <TableHead>{t.reports.tableStatus}</TableHead>
+                    <TableHead>{t.reports.tableStartDate}</TableHead>
+                    <TableHead>{t.reports.tableEndDate}</TableHead>
                     <TableHead className="text-right">{t.reports.tableMembers}</TableHead>
                     <TableHead className="text-right">{t.reports.tableTotal}</TableHead>
                     <TableHead className="text-right">{t.reports.tableReceived}</TableHead>
@@ -177,6 +183,12 @@ export default async function ReportsPage() {
                       </TableCell>
                       <TableCell>
                         <ClubStatusBadge status={c.status} t={t} />
+                      </TableCell>
+                      <TableCell className="text-muted-foreground">
+                        {c.startDate ? formatDate(c.startDate, locale) : t.reports.notStartedYet}
+                      </TableCell>
+                      <TableCell className="text-muted-foreground">
+                        {c.endDate ? formatDate(c.endDate, locale) : t.reports.noEndDateYet}
                       </TableCell>
                       <TableCell className="text-right tabular-nums">{c.memberCount}</TableCell>
                       <TableCell className="text-right tabular-nums">{formatUSD(c.totalTarget)}</TableCell>
