@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { ArrowRight, Link2, Plus, Shield, Users, Wallet } from "lucide-react";
+import { ArrowRight, CheckCircle2, Link2, Plus, Shield, Users } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
@@ -8,11 +8,10 @@ import { formatDate, formatUSD } from "@/lib/format";
 import { getDictionary, getLocale } from "@/lib/i18n/locale";
 import { formatClubDuration, interpolate } from "@/lib/i18n/format";
 import type { Dictionary } from "@/lib/i18n/dictionaries";
-import { getCurrentCycleFromRows, sumApprovedAmount } from "@/lib/club";
+import { getCurrentCycleFromRows } from "@/lib/club";
 import { goldTeal } from "@/lib/theme";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Progress } from "@/components/ui/progress";
 import { ClubStatusBadge } from "@/components/club-status-badge";
 import { UserTrustBadge } from "@/components/user-trust-badge";
 import type { ClubCycle, SavingsClub } from "@prisma/client";
@@ -55,15 +54,6 @@ export default async function DashboardPage() {
     where: { userId, clubId: { in: clubIds } },
   });
 
-  const accumulated = sumApprovedAmount(reports);
-
-  const targetTotal = memberships.reduce(
-    (sum, m) => sum + m.club.quotaAmount * m.club.durationCount,
-    0
-  );
-
-  const progressPct = targetTotal > 0 ? Math.min(100, Math.round((accumulated / targetTotal) * 100)) : 0;
-
   const upcomingDues = memberships
     .filter((m) => m.club.status === "ACTIVE" && m.club.cycles.length > 0)
     .map((m) => {
@@ -78,15 +68,16 @@ export default async function DashboardPage() {
     .sort((a, b) => a.dueDate.getTime() - b.dueDate.getTime());
 
   const nextDue = upcomingDues[0];
-  const showProgress = accumulated > 0;
   const showNextAction = Boolean(nextDue);
 
-  const managedClubs: ClubCard[] = [
+  const allManagedClubs: ClubCard[] = [
     ...memberships
       .filter((m) => m.club.adminId === userId)
       .map((m) => ({ clubId: m.clubId, club: m.club, payoutTurn: m.payoutTurn, isParticipant: true })),
     ...adminOnlyClubs.map((club) => ({ clubId: club.id, club, payoutTurn: null, isParticipant: false })),
   ];
+  const managedClubs = allManagedClubs.filter((c) => c.club.status !== "COMPLETED");
+  const managedCompletedClubs = allManagedClubs.filter((c) => c.club.status === "COMPLETED");
   const joinedClubs: ClubCard[] = memberships
     .filter((m) => m.club.adminId !== userId)
     .map((m) => ({ clubId: m.clubId, club: m.club, payoutTurn: m.payoutTurn, isParticipant: true }));
@@ -128,6 +119,15 @@ export default async function DashboardPage() {
             icon={Shield}
           />
         )}
+        {managedCompletedClubs.length > 0 && (
+          <ClubSection
+            title={t.dashboard.clubsYouManageCompleted}
+            emptyMessage={t.dashboard.noCompletedManagedClubs}
+            clubs={managedCompletedClubs}
+            t={t}
+            icon={CheckCircle2}
+          />
+        )}
         {joinedClubs.length > 0 && (
           <ClubSection
             title={t.dashboard.clubsYouveJoined}
@@ -139,46 +139,21 @@ export default async function DashboardPage() {
         )}
       </div>
 
-      {(showProgress || showNextAction) && (
-        <div className={`grid gap-4 ${showProgress && showNextAction ? "sm:grid-cols-2" : ""}`}>
-          {showProgress && (
-            <Card className="border-l-4 border-l-emerald-500 shadow-sm transition-all duration-200 hover:shadow-lg">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-base">
-                  <Wallet className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
-                  {t.dashboard.totalProgress}
-                </CardTitle>
-                <CardDescription>{t.dashboard.acrossClubs}</CardDescription>
-              </CardHeader>
-              <CardContent className="flex flex-col gap-3">
-                <div className="flex items-baseline justify-between">
-                  <span className="text-2xl font-bold">{formatUSD(accumulated)}</span>
-                  <span className="text-sm text-muted-foreground">
-                    {interpolate(t.dashboard.of, { target: formatUSD(targetTotal) })}
-                  </span>
-                </div>
-                <Progress value={progressPct} />
-              </CardContent>
-            </Card>
-          )}
-
-          {showNextAction && (
-            <Card className="border-l-4 border-l-amber-500 shadow-sm transition-all duration-200 hover:shadow-lg">
-              <CardHeader>
-                <CardTitle className="text-base">{t.dashboard.nextAction}</CardTitle>
-                <CardDescription>{t.dashboard.upcomingDue}</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="flex flex-col gap-1">
-                  <span className="text-2xl font-bold">{formatUSD(nextDue!.club.quotaAmount)}</span>
-                  <span className="text-sm text-muted-foreground">
-                    {nextDue!.club.name} &middot; {formatDate(nextDue!.dueDate, locale)}
-                  </span>
-                </div>
-              </CardContent>
-            </Card>
-          )}
-        </div>
+      {showNextAction && (
+        <Card className="border-l-4 border-l-amber-500 shadow-sm transition-all duration-200 hover:shadow-lg">
+          <CardHeader>
+            <CardTitle className="text-base">{t.dashboard.nextAction}</CardTitle>
+            <CardDescription>{t.dashboard.upcomingDue}</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="flex flex-col gap-1">
+              <span className="text-2xl font-bold">{formatUSD(nextDue!.club.quotaAmount)}</span>
+              <span className="text-sm text-muted-foreground">
+                {nextDue!.club.name} &middot; {formatDate(nextDue!.dueDate, locale)}
+              </span>
+            </div>
+          </CardContent>
+        </Card>
       )}
     </div>
   );
