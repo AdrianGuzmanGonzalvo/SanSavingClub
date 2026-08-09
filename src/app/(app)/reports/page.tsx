@@ -3,7 +3,7 @@ import Link from "next/link";
 import { BarChart3, Building2, Contact, Gift, HandCoins, Users, Wallet } from "lucide-react";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
-import { formatDate, formatUSD } from "@/lib/format";
+import { formatDateMDY, formatUSD } from "@/lib/format";
 import { getDictionary, getLocale } from "@/lib/i18n/locale";
 import { interpolate } from "@/lib/i18n/format";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -185,10 +185,10 @@ export default async function ReportsPage() {
                         <ClubStatusBadge status={c.status} t={t} />
                       </TableCell>
                       <TableCell className="text-muted-foreground">
-                        {c.startDate ? formatDate(c.startDate, locale) : t.reports.notStartedYet}
+                        {c.startDate ? formatDateMDY(c.startDate) : t.reports.notStartedYet}
                       </TableCell>
                       <TableCell className="text-muted-foreground">
-                        {c.endDate ? formatDate(c.endDate, locale) : t.reports.noEndDateYet}
+                        {c.endDate ? formatDateMDY(c.endDate) : t.reports.noEndDateYet}
                       </TableCell>
                       <TableCell className="text-right tabular-nums">{c.memberCount}</TableCell>
                       <TableCell className="text-right tabular-nums">{formatUSD(c.totalTarget)}</TableCell>
