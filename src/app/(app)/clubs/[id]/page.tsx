@@ -122,8 +122,8 @@ export default async function ClubDetailPage({ params }: { params: Promise<{ id:
               {initials(club.name)}
             </div>
             <div className="flex flex-col gap-1">
-              <CardTitle className="text-xl text-white">{club.name}</CardTitle>
-              <p className="text-sm text-white/80">
+              <CardTitle className="text-2xl font-bold text-white">{club.name}</CardTitle>
+              <p className="text-base font-semibold text-white/90">
                 {interpolate(t.dashboard.perMonth, { amount: formatUSD(club.quotaAmount) })} &middot;{" "}
                 {interpolate(t.clubs.detail.totalClubAmount, {
                   amount: formatUSD(club.quotaAmount * club.durationCount),
@@ -131,7 +131,7 @@ export default async function ClubDetailPage({ params }: { params: Promise<{ id:
                 &middot; {formatClubDuration(t, club.durationUnit, club.durationCount)} &middot;{" "}
                 {interpolate(t.clubs.detail.adminLabel, { name: club.admin.fullName })}
               </p>
-              <p className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-white/70">
+              <p className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm font-medium text-white/80">
                 <span className="flex items-center gap-1">
                   <CalendarClock className="h-3.5 w-3.5" />
                   {interpolate(t.clubs.detail.dueOnDay, { day: formatScheduleDay(t, club.durationUnit, club.paymentDueDay) })}
@@ -177,19 +177,19 @@ export default async function ClubDetailPage({ params }: { params: Promise<{ id:
           <div className="pointer-events-none absolute -top-16 -right-16 h-56 w-56 rounded-full bg-white/10 blur-3xl" />
           <div className="pointer-events-none absolute -bottom-20 -left-10 h-56 w-56 rounded-full bg-amber-200/10 blur-3xl" />
           <CardHeader className="relative">
-            <CardTitle className="flex items-center gap-2 text-base text-white">
-              <Sparkles className="h-4 w-4 text-amber-100" />
-              <span className="text-[0.85rem] font-semibold tracking-wide text-amber-50">
+            <CardTitle className="flex items-center gap-2 text-lg text-white">
+              <Sparkles className="h-5 w-5 text-amber-100" />
+              <span className="text-base font-bold tracking-wide text-amber-50">
                 {t.clubs.detail.thisMonthsPayout}
               </span>
             </CardTitle>
           </CardHeader>
           <CardContent className="relative flex flex-col gap-4">
             <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
-              <span className="text-sm font-medium text-white/90">
+              <span className="text-base font-bold text-white">
                 {interpolate(t.clubs.detail.dueBanner, { date: formatDate(cycleDueDate, locale) })}
               </span>
-              <span className="text-sm font-medium text-white/90">
+              <span className="text-base font-bold text-white">
                 {interpolate(t.clubs.detail.payoutBannerTurn, { turn: currentCycle, date: formatDate(payoutDate, locale) })}
               </span>
             </div>
@@ -202,8 +202,8 @@ export default async function ClubDetailPage({ params }: { params: Promise<{ id:
                     </AvatarFallback>
                   </Avatar>
                   <div>
-                    <p className="text-base font-semibold text-white">{displayNameFor(payoutMember)}</p>
-                    <p className="text-sm text-white/80">
+                    <p className="text-lg font-bold text-white">{displayNameFor(payoutMember)}</p>
+                    <p className="text-base font-semibold text-white/90">
                       {interpolate(t.clubs.detail.poolAndDate, {
                         pool: formatUSD(payoutAmount),
                         date: formatDate(payoutDate, locale),
@@ -212,7 +212,7 @@ export default async function ClubDetailPage({ params }: { params: Promise<{ id:
                   </div>
                 </div>
               ) : (
-                <p className="text-sm text-white/80">{t.clubs.detail.payoutRecipientUnassigned}</p>
+                <p className="text-base font-semibold text-white/90">{t.clubs.detail.payoutRecipientUnassigned}</p>
               )}
               {isAdmin && payoutMember && currentCycleRow && !currentCycleRow.isCompleted && (
                 <MarkPayoutButton clubId={club.id} />
