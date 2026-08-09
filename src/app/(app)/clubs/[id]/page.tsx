@@ -113,15 +113,18 @@ export default async function ClubDetailPage({ params }: { params: Promise<{ id:
     <div className="flex flex-col gap-6">
       <ClubSubNav clubId={club.id} isAdmin={isAdmin} isParticipant={isParticipant} />
 
-      <Card className="shadow-[0_4px_20px_-2px_rgba(5,150,105,0.08)]">
+      <Card
+        className="overflow-hidden border-none text-white shadow-[0_8px_30px_-6px_rgba(4,61,46,0.5)]"
+        style={{ background: "linear-gradient(180deg, #064e3b 0%, #043d2e 100%)" }}
+      >
         <CardHeader className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
           <div className="flex items-start gap-3">
-            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-emerald-500 to-emerald-700 text-sm font-bold text-white shadow-[0_4px_14px_rgba(16,185,129,0.3)]">
+            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-white/20 bg-white/15 text-sm font-bold text-white">
               {initials(club.name)}
             </div>
             <div className="flex flex-col gap-1">
-              <CardTitle className="text-xl">{club.name}</CardTitle>
-              <p className="text-sm text-muted-foreground">
+              <CardTitle className="text-xl text-white">{club.name}</CardTitle>
+              <p className="text-sm text-emerald-100/80">
                 {interpolate(t.dashboard.perMonth, { amount: formatUSD(club.quotaAmount) })} &middot;{" "}
                 {interpolate(t.clubs.detail.totalClubAmount, {
                   amount: formatUSD(club.quotaAmount * club.durationCount),
@@ -129,7 +132,7 @@ export default async function ClubDetailPage({ params }: { params: Promise<{ id:
                 &middot; {formatClubDuration(t, club.durationUnit, club.durationCount)} &middot;{" "}
                 {interpolate(t.clubs.detail.adminLabel, { name: club.admin.fullName })}
               </p>
-              <p className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
+              <p className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-emerald-100/70">
                 <span className="flex items-center gap-1">
                   <CalendarClock className="h-3.5 w-3.5" />
                   {interpolate(t.clubs.detail.dueOnDay, { day: formatScheduleDay(t, club.durationUnit, club.paymentDueDay) })}
@@ -160,7 +163,7 @@ export default async function ClubDetailPage({ params }: { params: Promise<{ id:
               )}
               <ClubStatusBadge status={club.status} t={t} />
             </div>
-            <InviteCode code={club.inviteCode} />
+            <InviteCode code={club.inviteCode} className="border-white/20 bg-white/10 text-white" />
           </div>
         </CardHeader>
         {isAdmin && club.status === "PENDING" && (
@@ -172,23 +175,23 @@ export default async function ClubDetailPage({ params }: { params: Promise<{ id:
 
       {currentCycle && payoutDate && cycleDueDate && (
         <Card
-          className="border-none text-white shadow-[0_8px_30px_-6px_rgba(4,61,46,0.5)]"
-          style={{ background: "linear-gradient(180deg, #064e3b 0%, #043d2e 100%)" }}
+          className="border-none text-white shadow-[0_8px_30px_-6px_rgba(146,64,14,0.45)]"
+          style={{ background: "linear-gradient(180deg, #b45309 0%, #7c2d12 100%)" }}
         >
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-base text-white">
-              <Sparkles className="h-4 w-4 text-emerald-300" />
-              <span className="text-[0.85rem] font-semibold tracking-wide text-emerald-200">
+              <Sparkles className="h-4 w-4 text-amber-200" />
+              <span className="text-[0.85rem] font-semibold tracking-wide text-amber-100">
                 {t.clubs.detail.thisMonthsPayout}
               </span>
             </CardTitle>
           </CardHeader>
           <CardContent className="flex flex-col gap-4">
             <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
-              <span className="text-sm font-medium text-emerald-100">
+              <span className="text-sm font-medium text-amber-50">
                 {interpolate(t.clubs.detail.dueBanner, { date: formatDate(cycleDueDate, locale) })}
               </span>
-              <span className="text-sm font-medium text-emerald-100">
+              <span className="text-sm font-medium text-amber-50">
                 {interpolate(t.clubs.detail.payoutBannerTurn, { turn: currentCycle, date: formatDate(payoutDate, locale) })}
               </span>
             </div>
@@ -202,7 +205,7 @@ export default async function ClubDetailPage({ params }: { params: Promise<{ id:
                   </Avatar>
                   <div>
                     <p className="text-base font-semibold text-white">{displayNameFor(payoutMember)}</p>
-                    <p className="text-sm text-emerald-100/80">
+                    <p className="text-sm text-amber-50/80">
                       {interpolate(t.clubs.detail.poolAndDate, {
                         pool: formatUSD(payoutAmount),
                         date: formatDate(payoutDate, locale),
@@ -211,7 +214,7 @@ export default async function ClubDetailPage({ params }: { params: Promise<{ id:
                   </div>
                 </div>
               ) : (
-                <p className="text-sm text-emerald-100/80">{t.clubs.detail.payoutRecipientUnassigned}</p>
+                <p className="text-sm text-amber-50/80">{t.clubs.detail.payoutRecipientUnassigned}</p>
               )}
               {isAdmin && payoutMember && currentCycleRow && !currentCycleRow.isCompleted && (
                 <MarkPayoutButton clubId={club.id} />
