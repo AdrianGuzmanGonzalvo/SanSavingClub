@@ -212,11 +212,12 @@ function ClubSection({
         <div className={`grid gap-3 ${clubs.length > 1 ? "sm:grid-cols-2" : ""}`}>
           {clubs.map((c) => (
             <Link key={c.clubId} href={`/clubs/${c.clubId}`}>
-              <Card className="border-l-4 border-l-emerald-500/60 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-l-emerald-500 hover:shadow-lg">
-                <CardContent className="flex items-center justify-between py-4">
+              <Card className="relative overflow-hidden border-none bg-gradient-to-br from-emerald-600 via-teal-700 to-indigo-800 text-white shadow-lg transition-all duration-200 hover:-translate-y-0.5 hover:shadow-xl">
+                <div className="pointer-events-none absolute -top-10 -right-10 h-32 w-32 rounded-full bg-white/10 blur-2xl" />
+                <CardContent className="relative flex items-center justify-between py-4">
                   <div className="flex flex-col gap-1">
-                    <span className="font-medium">{c.club.name}</span>
-                    <span className="text-sm text-muted-foreground">
+                    <span className="font-medium text-white">{c.club.name}</span>
+                    <span className="text-sm text-white/80">
                       {interpolate(t.dashboard.perMonth, { amount: formatUSD(c.club.quotaAmount) })} &middot;{" "}
                       {formatClubDuration(t, c.club.durationUnit, c.club.durationCount)} &middot;{" "}
                       {!c.isParticipant
@@ -228,7 +229,7 @@ function ClubSection({
                   </div>
                   <div className="flex items-center gap-2">
                     <ClubStatusBadge status={c.club.status} t={t} />
-                    <ArrowRight className="h-4 w-4 text-muted-foreground" />
+                    <ArrowRight className="h-4 w-4 text-white/80" />
                   </div>
                 </CardContent>
               </Card>
