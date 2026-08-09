@@ -11,6 +11,7 @@ import {
   getCurrentCycleFromRows,
   resolveMemberDisplayName,
 } from "@/lib/club";
+import { goldTeal } from "@/lib/theme";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
@@ -113,7 +114,7 @@ export default async function ClubDetailPage({ params }: { params: Promise<{ id:
     <div className="flex flex-col gap-6">
       <ClubSubNav clubId={club.id} isAdmin={isAdmin} isParticipant={isParticipant} />
 
-      <Card className="relative overflow-hidden border-none bg-gradient-to-br from-emerald-600 via-teal-700 to-indigo-800 text-white shadow-lg">
+      <Card className={`relative overflow-hidden border-none ${goldTeal} text-white shadow-lg`}>
         <div className="pointer-events-none absolute -top-16 -right-16 h-56 w-56 rounded-full bg-white/10 blur-3xl" />
         <div className="pointer-events-none absolute -bottom-20 -left-10 h-56 w-56 rounded-full bg-emerald-300/10 blur-3xl" />
         <CardHeader className="relative flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
@@ -173,13 +174,12 @@ export default async function ClubDetailPage({ params }: { params: Promise<{ id:
       </Card>
 
       {currentCycle && payoutDate && cycleDueDate && (
-        <Card className="relative overflow-hidden border-none bg-gradient-to-br from-[#D4AC0D] from-5% via-teal-700 via-65% to-indigo-800 text-white shadow-lg">
+        <Card className="relative overflow-hidden border-none bg-gradient-to-br from-[#F1C40F] via-[#8a6d00] to-black text-white shadow-lg">
           <div className="pointer-events-none absolute -top-16 -right-16 h-56 w-56 rounded-full bg-white/10 blur-3xl" />
-          <div className="pointer-events-none absolute -bottom-20 -left-10 h-56 w-56 rounded-full bg-emerald-300/10 blur-3xl" />
           <CardHeader className="relative">
             <CardTitle className="flex items-center gap-2 text-lg text-white">
-              <Sparkles className="h-5 w-5 text-amber-100" />
-              <span className="text-base font-bold tracking-wide text-amber-50">
+              <Sparkles className="h-5 w-5 text-amber-200" />
+              <span className="text-base font-bold tracking-wide text-amber-100">
                 {t.clubs.detail.thisMonthsPayout}
               </span>
             </CardTitle>

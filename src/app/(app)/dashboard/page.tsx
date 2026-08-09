@@ -9,6 +9,7 @@ import { getDictionary, getLocale } from "@/lib/i18n/locale";
 import { formatClubDuration, interpolate } from "@/lib/i18n/format";
 import type { Dictionary } from "@/lib/i18n/dictionaries";
 import { getCurrentCycleFromRows, sumApprovedAmount } from "@/lib/club";
+import { goldTeal } from "@/lib/theme";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
@@ -92,7 +93,7 @@ export default async function DashboardPage() {
 
   return (
     <div className="flex flex-col gap-6">
-      <Card className="relative overflow-hidden border-none bg-gradient-to-br from-emerald-600 via-teal-700 to-indigo-800 text-white shadow-lg">
+      <Card className={`relative overflow-hidden border-none ${goldTeal} text-white shadow-lg`}>
         <div className="pointer-events-none absolute -top-16 -right-16 h-56 w-56 rounded-full bg-white/10 blur-3xl" />
         <div className="pointer-events-none absolute -bottom-20 -left-10 h-56 w-56 rounded-full bg-emerald-300/10 blur-3xl" />
         <CardContent className="relative flex flex-col gap-2">
@@ -212,7 +213,7 @@ function ClubSection({
         <div className={`grid gap-3 ${clubs.length > 1 ? "sm:grid-cols-2" : ""}`}>
           {clubs.map((c) => (
             <Link key={c.clubId} href={`/clubs/${c.clubId}`}>
-              <Card className="relative overflow-hidden border-none bg-gradient-to-br from-[#D4AC0D] from-5% via-teal-700 via-65% to-indigo-800 text-white shadow-lg transition-all duration-200 hover:-translate-y-0.5 hover:shadow-xl">
+              <Card className="relative overflow-hidden border-none bg-gradient-to-br from-emerald-600 via-teal-700 to-indigo-800 text-white shadow-lg transition-all duration-200 hover:-translate-y-0.5 hover:shadow-xl">
                 <div className="pointer-events-none absolute -top-10 -right-10 h-32 w-32 rounded-full bg-white/10 blur-2xl" />
                 <CardContent className="relative flex items-center justify-between py-4">
                   <div className="flex flex-col gap-1">
