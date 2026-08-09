@@ -173,9 +173,9 @@ export default async function ClubDetailPage({ params }: { params: Promise<{ id:
       </Card>
 
       {currentCycle && payoutDate && cycleDueDate && (
-        <Card className="relative overflow-hidden border-none bg-gradient-to-br from-amber-400 via-orange-400 to-red-400 text-white shadow-lg">
+        <Card className="relative overflow-hidden border-none bg-gradient-to-br from-[#D4AC0D] from-5% via-teal-700 via-65% to-indigo-800 text-white shadow-lg">
           <div className="pointer-events-none absolute -top-16 -right-16 h-56 w-56 rounded-full bg-white/10 blur-3xl" />
-          <div className="pointer-events-none absolute -bottom-20 -left-10 h-56 w-56 rounded-full bg-amber-200/10 blur-3xl" />
+          <div className="pointer-events-none absolute -bottom-20 -left-10 h-56 w-56 rounded-full bg-emerald-300/10 blur-3xl" />
           <CardHeader className="relative">
             <CardTitle className="flex items-center gap-2 text-lg text-white">
               <Sparkles className="h-5 w-5 text-amber-100" />

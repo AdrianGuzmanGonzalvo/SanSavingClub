@@ -212,12 +212,12 @@ function ClubSection({
         <div className={`grid gap-3 ${clubs.length > 1 ? "sm:grid-cols-2" : ""}`}>
           {clubs.map((c) => (
             <Link key={c.clubId} href={`/clubs/${c.clubId}`}>
-              <Card className="relative overflow-hidden border-none bg-gradient-to-br from-emerald-600 via-teal-700 to-indigo-800 text-white shadow-lg transition-all duration-200 hover:-translate-y-0.5 hover:shadow-xl">
+              <Card className="relative overflow-hidden border-none bg-gradient-to-br from-[#D4AC0D] from-5% via-teal-700 via-65% to-indigo-800 text-white shadow-lg transition-all duration-200 hover:-translate-y-0.5 hover:shadow-xl">
                 <div className="pointer-events-none absolute -top-10 -right-10 h-32 w-32 rounded-full bg-white/10 blur-2xl" />
                 <CardContent className="relative flex items-center justify-between py-4">
                   <div className="flex flex-col gap-1">
-                    <span className="font-medium text-white">{c.club.name}</span>
-                    <span className="text-sm text-white/80">
+                    <span className="text-lg font-bold text-white">{c.club.name}</span>
+                    <span className="text-sm font-semibold text-white/90">
                       {interpolate(t.dashboard.perMonth, { amount: formatUSD(c.club.quotaAmount) })} &middot;{" "}
                       {formatClubDuration(t, c.club.durationUnit, c.club.durationCount)} &middot;{" "}
                       {!c.isParticipant
