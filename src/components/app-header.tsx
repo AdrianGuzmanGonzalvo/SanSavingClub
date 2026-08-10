@@ -76,13 +76,13 @@ export function AppHeader({
 
   return (
     <header className="sticky top-0 z-10 border-b border-slate-200/80 bg-white/80 backdrop-blur-md dark:border-slate-800/80 dark:bg-slate-900/70">
-      <div className="mx-auto flex max-w-5xl items-center justify-between px-6 py-3">
-        <Link href="/dashboard" className="flex items-center gap-2 font-semibold">
+      <div className="mx-auto flex max-w-5xl items-center justify-between gap-2 px-4 py-3 sm:px-6">
+        <Link href="/dashboard" className="flex shrink-0 items-center gap-2 font-semibold">
           <SanClubEmblemLogo className="h-7 w-7" />
-          {t.common.appName}
+          <span className="hidden sm:inline">{t.common.appName}</span>
         </Link>
 
-        <nav className="hidden gap-1 sm:flex">
+        <nav className="flex items-center gap-1">
           {navLinks.map((link) => (
             <Button
               key={link.href}
@@ -91,7 +91,8 @@ export function AppHeader({
               asChild
             >
               <Link href={link.href}>
-                <link.icon /> {link.label}
+                <link.icon className="h-4 w-4" />
+                <span className="hidden sm:inline">{link.label}</span>
               </Link>
             </Button>
           ))}
@@ -156,18 +157,6 @@ export function AppHeader({
                 <p className="text-xs leading-none text-muted-foreground mt-1">{userEmail}</p>
               </DropdownMenuLabel>
               <DropdownMenuSeparator />
-              <DropdownMenuItem asChild className="sm:hidden">
-                <Link href="/dashboard">
-                  <LayoutDashboard /> {t.header.dashboard}
-                </Link>
-              </DropdownMenuItem>
-              {isLeader && (
-                <DropdownMenuItem asChild className="sm:hidden">
-                  <Link href="/reports">
-                    <BarChart3 /> {t.reports.navLabel}
-                  </Link>
-                </DropdownMenuItem>
-              )}
               <DropdownMenuItem asChild>
                 <Link href="/profile">
                   <User /> {t.header.profile}
