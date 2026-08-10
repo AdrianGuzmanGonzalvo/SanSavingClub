@@ -40,6 +40,9 @@ yarn-error.log*
 # vercel
 .vercel
 
+# Android signing keystore — never commit this, it's your app's permanent signing identity
+/keystore-secret
+
 # typescript
 *.tsbuildinfo
 next-env.d.ts
