@@ -23,6 +23,9 @@ export default async function Home() {
           {t.common.appName}
         </div>
         <div className="flex items-center gap-2">
+          <Button variant="ghost" asChild className="hidden sm:inline-flex">
+            <Link href="/how-it-works">{t.landing.howItWorks}</Link>
+          </Button>
           <LanguageSwitcher />
           <ThemeToggle />
           <Button variant="ghost" asChild>
@@ -64,32 +67,9 @@ export default async function Home() {
           />
         </div>
 
-        <section className="mt-16 flex w-full max-w-2xl flex-col gap-6 text-left">
-          <div className="flex flex-col gap-1 text-center">
-            <h2 className="text-2xl font-bold tracking-tight">{t.help.title}</h2>
-            <p className="text-muted-foreground">{t.help.subtitle}</p>
-          </div>
-          <div className="flex flex-col gap-4">
-            {t.help.sections.map((section) => (
-              <div key={section.title} className="rounded-lg border p-5">
-                <h3 className="mb-2 font-semibold">{section.title}</h3>
-                <ol className="flex flex-col gap-1.5">
-                  {section.steps.map((step, i) => (
-                    <li key={i} className="flex gap-2 text-sm text-muted-foreground">
-                      <span className="shrink-0 font-semibold text-primary">{i + 1}.</span>
-                      <span>{step}</span>
-                    </li>
-                  ))}
-                </ol>
-              </div>
-            ))}
-          </div>
-          <div className="flex justify-center">
-            <Button size="lg" asChild>
-              <Link href="/register">{t.landing.createClub}</Link>
-            </Button>
-          </div>
-        </section>
+        <Button variant="link" asChild className="mt-2">
+          <Link href="/how-it-works">{t.landing.howItWorksLink}</Link>
+        </Button>
       </main>
       <footer className="border-t px-6 py-6 text-center text-sm text-muted-foreground">
         <Link href="/privacy" className="hover:text-foreground hover:underline">

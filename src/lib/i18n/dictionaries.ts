@@ -48,6 +48,8 @@ export const en = {
   landing: {
     signIn: "Sign in",
     getStarted: "Get started",
+    howItWorks: "How it works",
+    howItWorksLink: "Not sure how it works? See a full walkthrough →",
     title: "Group savings, done the modern way",
     subtitle:
       "Form a private savings club with people you trust, contribute a fixed quota amount, and take turns receiving the full pooled payout — with receipts, approvals, and a shared calendar keeping everyone on the same page.",
@@ -651,6 +653,7 @@ export const en = {
     navLabel: "How to use",
     title: "How to use SanSavingClub",
     subtitle: "A quick walkthrough of the whole app, whether you're joining a club or leading one.",
+    backToHome: "Back to home",
     sections: [
       {
         title: "1. Create your account",
@@ -774,6 +777,8 @@ export const es: typeof en = {
   landing: {
     signIn: "Iniciar sesión",
     getStarted: "Comenzar",
+    howItWorks: "Cómo funciona",
+    howItWorksLink: "¿No sabes cómo funciona? Mira la guía completa →",
     title: "Ahorro grupal, a la manera moderna",
     subtitle:
       "Forma un club de ahorro privado con personas de confianza, aporta una cuota fija y túrnense para recibir el fondo acumulado — con comprobantes, aprobaciones y un calendario compartido para que todos estén al tanto.",
@@ -1378,6 +1383,7 @@ export const es: typeof en = {
     navLabel: "Cómo usarla",
     title: "Cómo usar SanSavingClub",
     subtitle: "Un recorrido rápido por toda la app, ya sea que te unas a un club o que lo lideres.",
+    backToHome: "Volver al inicio",
     sections: [
       {
         title: "1. Crea tu cuenta",

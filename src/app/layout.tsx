@@ -3,6 +3,7 @@ import { Geist, Geist_Mono, Plus_Jakarta_Sans } from "next/font/google";
 import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { ThemeProvider } from "@/components/theme-provider";
+import { NativeStatusBar } from "@/components/native-status-bar";
 import { I18nProvider } from "@/lib/i18n/i18n-provider";
 import { getDictionary, getLocale } from "@/lib/i18n/locale";
 import "./globals.css";
@@ -47,7 +48,8 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
       suppressHydrationWarning
       className={`${geistSans.variable} ${geistMono.variable} ${plusJakartaSans.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)]">
+      <body className="min-h-full flex flex-col">
+        <NativeStatusBar />
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
           <I18nProvider locale={locale} dict={dict}>
             <TooltipProvider delayDuration={200}>

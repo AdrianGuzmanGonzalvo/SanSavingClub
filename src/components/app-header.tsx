@@ -156,6 +156,18 @@ export function AppHeader({
                 <p className="text-xs leading-none text-muted-foreground mt-1">{userEmail}</p>
               </DropdownMenuLabel>
               <DropdownMenuSeparator />
+              <DropdownMenuItem asChild className="sm:hidden">
+                <Link href="/dashboard">
+                  <LayoutDashboard /> {t.header.dashboard}
+                </Link>
+              </DropdownMenuItem>
+              {isLeader && (
+                <DropdownMenuItem asChild className="sm:hidden">
+                  <Link href="/reports">
+                    <BarChart3 /> {t.reports.navLabel}
+                  </Link>
+                </DropdownMenuItem>
+              )}
               <DropdownMenuItem asChild>
                 <Link href="/profile">
                   <User /> {t.header.profile}
