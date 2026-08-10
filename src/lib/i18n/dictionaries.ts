@@ -647,6 +647,81 @@ export const en = {
     noPhone: "—",
     exportContactsCsv: "Export CSV",
   },
+  help: {
+    navLabel: "How to use",
+    title: "How to use SanSavingClub",
+    subtitle: "A quick walkthrough of the whole app, whether you're joining a club or leading one.",
+    sections: [
+      {
+        title: "1. Create your account",
+        steps: [
+          "Sign up with your name, email, and a password on the Register page.",
+          "Optional but recommended: turn on two-factor authentication from Profile → Security for extra protection.",
+          "Forgot your password? Use the \"Forgot password\" link on the login page — you'll get a reset link by email.",
+        ],
+      },
+      {
+        title: "2. Start a new club",
+        steps: [
+          "From the Dashboard, click \"Create club.\"",
+          "Enter the club name, the monthly quota per member, and the total club amount — the app works out how many members/turns fit automatically.",
+          "Pick the first due date and payout date from the calendar; later cycles repeat automatically from there.",
+          "Once created, share the invite code with your group so they can join.",
+        ],
+      },
+      {
+        title: "3. Join a club",
+        steps: [
+          "From the Dashboard, click \"Join with code.\"",
+          "Enter the invite code your club leader shared with you.",
+        ],
+      },
+      {
+        title: "4. Before activating (for leaders)",
+        steps: [
+          "Go to your club's Admin panel → Turns, and assign each member the turn number they'll receive their payout on.",
+          "Use \"Randomize Turns\" to fairly draw turns for anyone who doesn't have one yet — it won't touch turns already assigned.",
+          "Once every member has a turn, click \"Activate club\" to start the payment schedule.",
+        ],
+      },
+      {
+        title: "5. Report a payment",
+        steps: [
+          "Open your club and go to \"Report Payment.\"",
+          "Check the payment instructions your leader left (Zelle, Cash App, bank transfer, etc.) and send your quota that way first.",
+          "Then fill in the amount, date, and method, and attach a receipt screenshot if you have one.",
+          "Your leader reviews it and approves it — you'll see it reflected once approved.",
+        ],
+      },
+      {
+        title: "6. Keep track of your club",
+        steps: [
+          "The club page shows this cycle's payout, who receives it and when, plus the next due date.",
+          "Use the Calendar tab to see every due date and payout date for the whole club at a glance.",
+        ],
+      },
+      {
+        title: "7. If you're the leader",
+        steps: [
+          "Approve or reject reported payments from the \"Report Payment\" page's approval queue.",
+          "Once you've sent that cycle's pooled amount to whoever's turn it is, mark the payout as done — this closes the cycle and starts the next one.",
+          "From the Admin panel you can also manage members and turns, edit the club's settings and payment instructions, and post announcements.",
+        ],
+      },
+      {
+        title: "8. Your profile",
+        steps: [
+          "Update your password or enable/disable two-factor authentication from Profile → Security.",
+        ],
+      },
+      {
+        title: "9. Still need help?",
+        steps: [
+          "Send us a message from the Support page and we'll get back to you by email.",
+        ],
+      },
+    ],
+  },
 };
 
 export const es: typeof en = {
@@ -1298,6 +1373,81 @@ export const es: typeof en = {
     tableClubs: "Club(es)",
     noPhone: "—",
     exportContactsCsv: "Exportar CSV",
+  },
+  help: {
+    navLabel: "Cómo usarla",
+    title: "Cómo usar SanSavingClub",
+    subtitle: "Un recorrido rápido por toda la app, ya sea que te unas a un club o que lo lideres.",
+    sections: [
+      {
+        title: "1. Crea tu cuenta",
+        steps: [
+          "Regístrate con tu nombre, correo y una contraseña en la página de Registro.",
+          "Opcional pero recomendado: activa la verificación en dos pasos desde Perfil → Seguridad para más protección.",
+          "¿Olvidaste tu contraseña? Usa el enlace \"Olvidé mi contraseña\" en la página de inicio de sesión — te llegará un enlace de recuperación por correo.",
+        ],
+      },
+      {
+        title: "2. Inicia un club nuevo",
+        steps: [
+          "Desde el Dashboard, haz clic en \"Crear club.\"",
+          "Escribe el nombre del club, la cuota mensual por miembro, y el monto total del club — la app calcula sola cuántos miembros/turnos caben.",
+          "Elige la primera fecha de pago y de entrega en el calendario; los siguientes ciclos se repiten automáticamente a partir de ahí.",
+          "Una vez creado, comparte el código de invitación con tu grupo para que se unan.",
+        ],
+      },
+      {
+        title: "3. Únete a un club",
+        steps: [
+          "Desde el Dashboard, haz clic en \"Unirme con código.\"",
+          "Ingresa el código de invitación que te compartió el líder del club.",
+        ],
+      },
+      {
+        title: "4. Antes de activar (para líderes)",
+        steps: [
+          "Ve al panel de Administración de tu club → Turnos, y asígnale a cada miembro el número de turno en el que recibirá su pago.",
+          "Usa \"Sortear turnos\" para repartir de forma justa los turnos de quienes aún no tienen uno — no toca los turnos ya asignados.",
+          "Cuando todos los miembros tengan turno, haz clic en \"Activar club\" para iniciar el calendario de pagos.",
+        ],
+      },
+      {
+        title: "5. Reporta un pago",
+        steps: [
+          "Abre tu club y ve a \"Reportar pago.\"",
+          "Revisa las instrucciones de pago que dejó tu líder (Zelle, Cash App, transferencia bancaria, etc.) y primero envía tu cuota por ahí.",
+          "Luego llena el monto, la fecha y el método, y adjunta una captura del recibo si tienes una.",
+          "Tu líder lo revisa y lo aprueba — lo verás reflejado una vez aprobado.",
+        ],
+      },
+      {
+        title: "6. Da seguimiento a tu club",
+        steps: [
+          "La página del club muestra el payout de este ciclo, quién lo recibe y cuándo, además de la próxima fecha de pago.",
+          "Usa la pestaña de Calendario para ver de un vistazo todas las fechas de pago y entrega de todo el club.",
+        ],
+      },
+      {
+        title: "7. Si eres el líder",
+        steps: [
+          "Aprueba o rechaza los pagos reportados desde la cola de aprobación en la página \"Reportar pago.\"",
+          "Cuando ya le hayas enviado el fondo del ciclo a quien le toca el turno, marca el payout como realizado — esto cierra el ciclo y comienza el siguiente.",
+          "Desde el panel de Administración también puedes gestionar miembros y turnos, editar la configuración e instrucciones de pago del club, y publicar anuncios.",
+        ],
+      },
+      {
+        title: "8. Tu perfil",
+        steps: [
+          "Actualiza tu contraseña o activa/desactiva la verificación en dos pasos desde Perfil → Seguridad.",
+        ],
+      },
+      {
+        title: "9. ¿Todavía necesitas ayuda?",
+        steps: [
+          "Mándanos un mensaje desde la página de Soporte y te responderemos por correo.",
+        ],
+      },
+    ],
   },
 };
 

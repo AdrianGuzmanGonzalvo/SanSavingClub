@@ -3,7 +3,7 @@
 import { useTransition } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { BarChart3, Bell, LayoutDashboard, LifeBuoy, User } from "lucide-react";
+import { BarChart3, Bell, HelpCircle, LayoutDashboard, LifeBuoy, User } from "lucide-react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { SanClubEmblemLogo } from "@/components/SanClubEmblemLogo";
@@ -159,6 +159,11 @@ export function AppHeader({
               <DropdownMenuItem asChild>
                 <Link href="/profile">
                   <User /> {t.header.profile}
+                </Link>
+              </DropdownMenuItem>
+              <DropdownMenuItem asChild>
+                <Link href="/help">
+                  <HelpCircle /> {t.help.navLabel}
                 </Link>
               </DropdownMenuItem>
               <DropdownMenuItem asChild>
