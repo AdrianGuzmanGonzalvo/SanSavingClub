@@ -251,6 +251,7 @@ export default async function ClubDetailPage({ params }: { params: Promise<{ id:
         </CardContent>
       </Card>
 
+      {isAdmin && (
       <Card>
         <CardHeader className="flex flex-row items-center justify-between">
           <CardTitle className="flex items-center gap-2 text-base">
@@ -336,6 +337,7 @@ export default async function ClubDetailPage({ params }: { params: Promise<{ id:
           })}
         </CardContent>
       </Card>
+      )}
 
       <PaymentHistoryCard clubId={club.id} entries={paymentHistoryEntries} restricted={!canViewAllPayments} isAdmin={isAdmin} />
     </div>
