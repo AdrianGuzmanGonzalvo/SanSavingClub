@@ -17,21 +17,23 @@ export default async function Home() {
 
   return (
     <div className="flex min-h-screen flex-col">
-      <header className="flex items-center justify-between border-b px-6 py-4">
-        <div className="flex items-center gap-2 font-semibold">
-          <SanClubEmblemLogo className="h-8 w-8" />
-          {t.common.appName}
+      <header className="flex items-center justify-between gap-2 border-b px-4 py-4 sm:px-6">
+        <div className="flex min-w-0 items-center gap-2 font-semibold">
+          <SanClubEmblemLogo className="h-8 w-8 shrink-0" />
+          <span className="truncate">{t.common.appName}</span>
         </div>
-        <div className="flex items-center gap-2">
-          <Button variant="ghost" asChild className="hidden sm:inline-flex">
+        <div className="flex shrink-0 items-center gap-1 sm:gap-2">
+          <Button variant="ghost" asChild className="hidden md:inline-flex">
             <Link href="/how-it-works">{t.landing.howItWorks}</Link>
           </Button>
-          <LanguageSwitcher />
-          <ThemeToggle />
-          <Button variant="ghost" asChild>
+          <div className="hidden sm:flex sm:items-center sm:gap-2">
+            <LanguageSwitcher />
+            <ThemeToggle />
+          </div>
+          <Button variant="ghost" size="sm" asChild>
             <Link href="/login">{t.landing.signIn}</Link>
           </Button>
-          <Button asChild>
+          <Button size="sm" asChild>
             <Link href="/register">{t.landing.getStarted}</Link>
           </Button>
         </div>
