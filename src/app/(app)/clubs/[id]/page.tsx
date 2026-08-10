@@ -1,5 +1,5 @@
 import { notFound } from "next/navigation";
-import { AlertTriangle, CalendarClock, CheckCircle2, Crown, Gift, Megaphone, RefreshCw, Sparkles, Users } from "lucide-react";
+import { CalendarClock, CheckCircle2, Crown, Megaphone, RefreshCw, Sparkles, Users } from "lucide-react";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { formatDate, formatUSD } from "@/lib/format";
@@ -27,6 +27,15 @@ import { PaymentHistoryCard, type PaymentHistoryEntry } from "./payment-history"
 
 function initials(name: string) {
   return name.split(" ").map((p) => p[0]).filter(Boolean).slice(0, 2).join("").toUpperCase();
+}
+
+function StatChip({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="rounded-lg bg-white/10 px-3 py-2">
+      <p className="text-xs font-medium text-white/70">{label}</p>
+      <p className="truncate text-sm font-bold text-white">{value}</p>
+    </div>
+  );
 }
 
 export default async function ClubDetailPage({ params }: { params: Promise<{ id: string }> }) {
@@ -124,29 +133,11 @@ export default async function ClubDetailPage({ params }: { params: Promise<{ id:
             </div>
             <div className="flex flex-col gap-1">
               <CardTitle className="text-2xl font-bold text-white">{club.name}</CardTitle>
-              <p className="text-base font-semibold text-white/90">
-                {interpolate(t.dashboard.perMonth, { amount: formatUSD(club.quotaAmount) })} &middot;{" "}
-                {interpolate(t.clubs.detail.totalClubAmount, {
-                  amount: formatUSD(club.quotaAmount * club.durationCount),
-                })}{" "}
-                &middot; {formatClubDuration(t, club.durationUnit, club.durationCount)} &middot;{" "}
+              <p className="text-sm font-medium text-white/70">
+                {formatClubDuration(t, club.durationUnit, club.durationCount)} &middot;{" "}
                 {interpolate(t.clubs.detail.adminLabel, { name: club.admin.fullName })}
-              </p>
-              <p className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm font-medium text-white/80">
-                <span className="flex items-center gap-1">
-                  <CalendarClock className="h-3.5 w-3.5" />
-                  {interpolate(t.clubs.detail.dueOnDay, { day: formatScheduleDay(t, club.durationUnit, club.paymentDueDay) })}
-                </span>
-                <span className="flex items-center gap-1">
-                  <Gift className="h-3.5 w-3.5" />
-                  {interpolate(t.clubs.detail.payoutOnDay, { day: formatScheduleDay(t, club.durationUnit, club.payoutDay) })}
-                </span>
-                {club.lateFeeAmount > 0 && (
-                  <span className="flex items-center gap-1">
-                    <AlertTriangle className="h-3.5 w-3.5" />
-                    {t.clubs.new.lateFeeAmount}: {formatUSD(club.lateFeeAmount)}
-                  </span>
-                )}
+                {club.lateFeeAmount > 0 &&
+                  ` · ${t.clubs.new.lateFeeAmount}: ${formatUSD(club.lateFeeAmount)}`}
               </p>
             </div>
           </div>
@@ -166,11 +157,24 @@ export default async function ClubDetailPage({ params }: { params: Promise<{ id:
             <InviteCode code={club.inviteCode} className="border-white/20 bg-white/10 text-white" />
           </div>
         </CardHeader>
-        {isAdmin && club.status === "PENDING" && (
-          <CardContent className="relative">
-            <ActivateClubButton clubId={club.id} />
-          </CardContent>
-        )}
+        <CardContent className="relative flex flex-col gap-3">
+          <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+            <StatChip label={t.clubs.detail.quotaChipLabel} value={formatUSD(club.quotaAmount)} />
+            <StatChip
+              label={t.clubs.detail.totalChipLabel}
+              value={formatUSD(club.quotaAmount * club.durationCount)}
+            />
+            <StatChip
+              label={t.clubs.detail.dueDayChipLabel}
+              value={formatScheduleDay(t, club.durationUnit, club.paymentDueDay)}
+            />
+            <StatChip
+              label={t.clubs.detail.payoutDayChipLabel}
+              value={formatScheduleDay(t, club.durationUnit, club.payoutDay)}
+            />
+          </div>
+          {isAdmin && club.status === "PENDING" && <ActivateClubButton clubId={club.id} />}
+        </CardContent>
       </Card>
 
       {currentCycle && payoutDate && cycleDueDate && (
@@ -185,13 +189,9 @@ export default async function ClubDetailPage({ params }: { params: Promise<{ id:
             </CardTitle>
           </CardHeader>
           <CardContent className="relative flex flex-col gap-4">
-            <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
-              <span className="text-base font-bold text-white">
-                {interpolate(t.clubs.detail.dueBanner, { date: formatDate(cycleDueDate, locale) })}
-              </span>
-              <span className="text-base font-bold text-white">
-                {interpolate(t.clubs.detail.payoutBannerTurn, { turn: currentCycle, date: formatDate(payoutDate, locale) })}
-              </span>
+            <div className="grid grid-cols-2 gap-2">
+              <StatChip label={t.clubs.detail.dueChipLabel} value={formatDate(cycleDueDate, locale)} />
+              <StatChip label={t.clubs.detail.payoutChipLabel} value={formatDate(payoutDate, locale)} />
             </div>
             <div className="flex flex-col items-start justify-between gap-3 border-t border-white/10 pt-3 sm:flex-row sm:items-center">
               {payoutMember ? (
@@ -204,9 +204,9 @@ export default async function ClubDetailPage({ params }: { params: Promise<{ id:
                   <div>
                     <p className="text-lg font-bold text-white">{displayNameFor(payoutMember)}</p>
                     <p className="text-base font-semibold text-white/90">
-                      {interpolate(t.clubs.detail.poolAndDate, {
+                      {interpolate(t.clubs.detail.turnPoolLabel, {
+                        turn: currentCycle,
                         pool: formatUSD(payoutAmount),
-                        date: formatDate(payoutDate, locale),
                       })}
                     </p>
                   </div>
