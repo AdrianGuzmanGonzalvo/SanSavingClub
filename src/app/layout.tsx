@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono, Plus_Jakarta_Sans } from "next/font/google";
 import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -29,6 +29,14 @@ export const metadata: Metadata = {
   description: "Private group savings (ROSCA / Tanda) with manually tracked monthly contributions.",
 };
 
+// viewport-fit=cover lets the app read env(safe-area-inset-*) — needed so
+// content doesn't sit under the status bar/notch in the wrapped mobile app.
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  viewportFit: "cover",
+};
+
 export default async function RootLayout({ children }: LayoutProps<"/">) {
   const locale = await getLocale();
   const dict = getDictionary(locale);
@@ -39,7 +47,7 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
       suppressHydrationWarning
       className={`${geistSans.variable} ${geistMono.variable} ${plusJakartaSans.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col">
+      <body className="min-h-full flex flex-col pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)]">
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
           <I18nProvider locale={locale} dict={dict}>
             <TooltipProvider delayDuration={200}>
