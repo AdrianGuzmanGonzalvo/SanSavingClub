@@ -24,6 +24,7 @@ const plusJakartaSans = Plus_Jakarta_Sans({
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL("https://www.sansavingclub.com"),
   title: "SanSavingClub",
   description: "Private group savings (ROSCA / Tanda) with manually tracked monthly contributions.",
 };
