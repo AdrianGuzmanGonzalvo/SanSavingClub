@@ -1,5 +1,5 @@
 import { notFound } from "next/navigation";
-import { CalendarClock, CheckCircle2, Crown, Megaphone, RefreshCw, Sparkles, Users } from "lucide-react";
+import { CheckCircle2, Crown, Megaphone, RefreshCw, Sparkles, Users } from "lucide-react";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { formatDate, formatUSD } from "@/lib/format";
@@ -123,6 +123,50 @@ export default async function ClubDetailPage({ params }: { params: Promise<{ id:
     <div className="flex flex-col gap-6">
       <ClubSubNav clubId={club.id} isAdmin={isAdmin} isParticipant={isParticipant} />
 
+      {currentCycle && payoutDate && cycleDueDate && (
+        <Card className="relative overflow-hidden border-none bg-gradient-to-br from-emerald-600 via-teal-700 to-indigo-800 text-white shadow-lg">
+          <div className="pointer-events-none absolute -top-16 -right-16 h-56 w-56 rounded-full bg-white/10 blur-3xl" />
+          <CardHeader className="relative">
+            <CardTitle className="flex items-center gap-2 text-lg text-white">
+              <Sparkles className="h-5 w-5 text-emerald-200" />
+              <span className="text-base font-bold tracking-wide text-emerald-100">
+                {t.clubs.detail.greetingsTitle}
+              </span>
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="relative flex flex-col gap-4">
+            <p className="text-base font-medium text-white/90">
+              {interpolate(t.clubs.detail.clubWelcome, { user: session!.user.name ?? "", name: club.name })}
+            </p>
+            <div className="flex flex-col items-start justify-between gap-3 border-t border-white/10 pt-3 sm:flex-row sm:items-center">
+              {payoutMember ? (
+                <div className="flex items-center gap-3">
+                  <Avatar className="h-12 w-12 border border-white/20">
+                    <AvatarFallback className="bg-white/15 text-base font-semibold text-white">
+                      {initials(displayNameFor(payoutMember))}
+                    </AvatarFallback>
+                  </Avatar>
+                  <div>
+                    <p className="text-lg font-bold text-white">{displayNameFor(payoutMember)}</p>
+                    <p className="text-base font-semibold text-white/90">
+                      {interpolate(t.clubs.detail.turnPoolLabel, {
+                        turn: currentCycle,
+                        pool: formatUSD(payoutAmount),
+                      })}
+                    </p>
+                  </div>
+                </div>
+              ) : (
+                <p className="text-base font-semibold text-white/90">{t.clubs.detail.payoutRecipientUnassigned}</p>
+              )}
+              {isAdmin && payoutMember && currentCycleRow && !currentCycleRow.isCompleted && (
+                <MarkPayoutButton clubId={club.id} />
+              )}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       <Card className={`relative overflow-hidden border-none ${goldTeal} text-white shadow-lg`}>
         <div className="pointer-events-none absolute -top-16 -right-16 h-56 w-56 rounded-full bg-white/10 blur-3xl" />
         <div className="pointer-events-none absolute -bottom-20 -left-10 h-56 w-56 rounded-full bg-emerald-300/10 blur-3xl" />
@@ -172,66 +216,13 @@ export default async function ClubDetailPage({ params }: { params: Promise<{ id:
               label={t.clubs.detail.payoutDayChipLabel}
               value={formatScheduleDay(t, club.durationUnit, club.payoutDay)}
             />
+            {currentCycle && cycleDueDate && (
+              <StatChip label={t.clubs.detail.nextCloseLabel} value={formatDate(cycleDueDate, locale)} />
+            )}
           </div>
           {isAdmin && club.status === "PENDING" && <ActivateClubButton clubId={club.id} />}
         </CardContent>
       </Card>
-
-      {currentCycle && payoutDate && cycleDueDate && (
-        <Card className="relative overflow-hidden border-none bg-gradient-to-br from-emerald-600 via-teal-700 to-indigo-800 text-white shadow-lg">
-          <div className="pointer-events-none absolute -top-16 -right-16 h-56 w-56 rounded-full bg-white/10 blur-3xl" />
-          <CardHeader className="relative">
-            <CardTitle className="flex items-center gap-2 text-lg text-white">
-              <Sparkles className="h-5 w-5 text-emerald-200" />
-              <span className="text-base font-bold tracking-wide text-emerald-100">
-                {t.clubs.detail.thisMonthsPayout}
-              </span>
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="relative flex flex-col gap-4">
-            <div className="grid grid-cols-2 gap-2">
-              <StatChip label={t.clubs.detail.dueChipLabel} value={formatDate(cycleDueDate, locale)} />
-              <StatChip label={t.clubs.detail.payoutChipLabel} value={formatDate(payoutDate, locale)} />
-            </div>
-            <div className="flex flex-col items-start justify-between gap-3 border-t border-white/10 pt-3 sm:flex-row sm:items-center">
-              {payoutMember ? (
-                <div className="flex items-center gap-3">
-                  <Avatar className="h-12 w-12 border border-white/20">
-                    <AvatarFallback className="bg-white/15 text-base font-semibold text-white">
-                      {initials(displayNameFor(payoutMember))}
-                    </AvatarFallback>
-                  </Avatar>
-                  <div>
-                    <p className="text-lg font-bold text-white">{displayNameFor(payoutMember)}</p>
-                    <p className="text-base font-semibold text-white/90">
-                      {interpolate(t.clubs.detail.turnPoolLabel, {
-                        turn: currentCycle,
-                        pool: formatUSD(payoutAmount),
-                      })}
-                    </p>
-                  </div>
-                </div>
-              ) : (
-                <p className="text-base font-semibold text-white/90">{t.clubs.detail.payoutRecipientUnassigned}</p>
-              )}
-              {isAdmin && payoutMember && currentCycleRow && !currentCycleRow.isCompleted && (
-                <MarkPayoutButton clubId={club.id} />
-              )}
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
-      {currentCycle && cycleDueDate && (
-        <Card>
-          <CardContent className="pt-6">
-            <p className="flex items-center gap-1.5 text-[0.85rem] font-medium text-muted-foreground">
-              <CalendarClock className="h-3.5 w-3.5" /> {t.clubs.detail.nextCloseLabel}
-            </p>
-            <p className="mt-1 text-xl font-bold">{formatDate(cycleDueDate, locale)}</p>
-          </CardContent>
-        </Card>
-      )}
 
       <Card>
         <CardHeader>

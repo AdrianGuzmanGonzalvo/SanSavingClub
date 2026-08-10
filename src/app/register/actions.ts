@@ -15,6 +15,7 @@ export async function registerAction(_prevState: RegisterState, formData: FormDa
   const fullName = String(formData.get("fullName") ?? "").trim();
   const email = String(formData.get("email") ?? "").trim().toLowerCase();
   const password = String(formData.get("password") ?? "");
+  const intent = String(formData.get("intent") ?? "join");
 
   if (!fullName || !email || !password) {
     return { error: t.auth.register.allFieldsRequired };
@@ -33,6 +34,7 @@ export async function registerAction(_prevState: RegisterState, formData: FormDa
     data: { fullName, email, passwordHash },
   });
 
-  await signIn("credentials", { email, password, redirectTo: "/dashboard" });
+  const redirectTo = intent === "organize" ? "/clubs/new" : "/clubs/join";
+  await signIn("credentials", { email, password, redirectTo });
   return {};
 }

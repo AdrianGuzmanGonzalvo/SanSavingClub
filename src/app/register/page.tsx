@@ -1,8 +1,8 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useState } from "react";
 import Link from "next/link";
-import { Loader2, Mail, User, UserPlus } from "lucide-react";
+import { Link2, Loader2, Mail, Sparkles, User, UserPlus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -12,13 +12,17 @@ import { IconInput } from "@/components/icon-input";
 import { SanSavingClubLogo } from "@/components/SanSavingClubLogo";
 import { PasswordInput } from "@/components/password-input";
 import { useI18n } from "@/lib/i18n/i18n-provider";
+import { cn } from "@/lib/utils";
 import { registerAction, type RegisterState } from "./actions";
 
 const initialState: RegisterState = {};
 
+type Intent = "organize" | "join";
+
 export default function RegisterPage() {
   const [state, formAction, isPending] = useActionState(registerAction, initialState);
   const { dict: t } = useI18n();
+  const [intent, setIntent] = useState<Intent>("join");
 
   return (
     <div className="relative flex min-h-screen items-center justify-center bg-muted/40 p-4">
@@ -34,6 +38,38 @@ export default function RegisterPage() {
         </CardHeader>
         <CardContent>
           <form action={formAction} className="flex flex-col gap-4">
+            <div className="flex flex-col gap-2">
+              <Label>{t.auth.register.intentQuestion}</Label>
+              <input type="hidden" name="intent" value={intent} />
+              <div className="grid grid-cols-2 gap-2">
+                <button
+                  type="button"
+                  onClick={() => setIntent("organize")}
+                  className={cn(
+                    "flex flex-col items-start gap-1 rounded-lg border p-3 text-left transition-colors",
+                    intent === "organize" ? "border-primary bg-primary/5" : "hover:bg-accent/50"
+                  )}
+                >
+                  <span className="flex items-center gap-1.5 text-sm font-medium">
+                    <Sparkles className="h-4 w-4 text-primary" /> {t.auth.register.intentOrganize}
+                  </span>
+                  <span className="text-xs text-muted-foreground">{t.auth.register.intentOrganizeDesc}</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setIntent("join")}
+                  className={cn(
+                    "flex flex-col items-start gap-1 rounded-lg border p-3 text-left transition-colors",
+                    intent === "join" ? "border-primary bg-primary/5" : "hover:bg-accent/50"
+                  )}
+                >
+                  <span className="flex items-center gap-1.5 text-sm font-medium">
+                    <Link2 className="h-4 w-4 text-primary" /> {t.auth.register.intentJoin}
+                  </span>
+                  <span className="text-xs text-muted-foreground">{t.auth.register.intentJoinDesc}</span>
+                </button>
+              </div>
+            </div>
             <div className="flex flex-col gap-2">
               <Label htmlFor="fullName">{t.auth.register.fullName}</Label>
               <IconInput icon={User} id="fullName" name="fullName" required autoComplete="name" />
