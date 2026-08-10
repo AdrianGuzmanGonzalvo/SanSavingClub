@@ -6,6 +6,7 @@ workflows:
       vars:
         PACKAGE_NAME: "com.sansavingclub.app"
       node: latest
+      java: 21
     triggering:
       events:
         - tag
