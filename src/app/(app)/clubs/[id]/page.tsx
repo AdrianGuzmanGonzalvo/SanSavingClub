@@ -178,12 +178,12 @@ export default async function ClubDetailPage({ params }: { params: Promise<{ id:
       </Card>
 
       {currentCycle && payoutDate && cycleDueDate && (
-        <Card className="relative overflow-hidden border-none bg-gradient-to-br from-[#F1C40F] via-[#8a6d00] to-black text-white shadow-lg">
+        <Card className="relative overflow-hidden border-none bg-gradient-to-br from-emerald-600 via-teal-700 to-indigo-800 text-white shadow-lg">
           <div className="pointer-events-none absolute -top-16 -right-16 h-56 w-56 rounded-full bg-white/10 blur-3xl" />
           <CardHeader className="relative">
             <CardTitle className="flex items-center gap-2 text-lg text-white">
-              <Sparkles className="h-5 w-5 text-amber-200" />
-              <span className="text-base font-bold tracking-wide text-amber-100">
+              <Sparkles className="h-5 w-5 text-emerald-200" />
+              <span className="text-base font-bold tracking-wide text-emerald-100">
                 {t.clubs.detail.thisMonthsPayout}
               </span>
             </CardTitle>
