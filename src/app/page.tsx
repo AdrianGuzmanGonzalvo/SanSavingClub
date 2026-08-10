@@ -20,16 +20,14 @@ export default async function Home() {
       <header className="flex items-center justify-between gap-2 border-b px-4 py-4 sm:px-6">
         <div className="flex min-w-0 items-center gap-2 font-semibold">
           <SanClubEmblemLogo className="h-8 w-8 shrink-0" />
-          <span className="truncate">{t.common.appName}</span>
+          <span className="hidden truncate sm:inline">{t.common.appName}</span>
         </div>
         <div className="flex shrink-0 items-center gap-1 sm:gap-2">
           <Button variant="ghost" asChild className="hidden md:inline-flex">
             <Link href="/how-it-works">{t.landing.howItWorks}</Link>
           </Button>
-          <div className="hidden sm:flex sm:items-center sm:gap-2">
-            <LanguageSwitcher />
-            <ThemeToggle />
-          </div>
+          <LanguageSwitcher />
+          <ThemeToggle />
           <Button variant="ghost" size="sm" asChild>
             <Link href="/login">{t.landing.signIn}</Link>
           </Button>
