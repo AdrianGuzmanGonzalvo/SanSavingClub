@@ -64,6 +64,11 @@ export default async function Home() {
           />
         </div>
       </main>
+      <footer className="border-t px-6 py-6 text-center text-sm text-muted-foreground">
+        <Link href="/privacy" className="hover:text-foreground hover:underline">
+          Privacy Policy
+        </Link>
+      </footer>
     </div>
   );
 }
