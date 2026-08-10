@@ -1,0 +1,35 @@
+<svg width="512" height="512" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="tealGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#2ECC71" />
+      <stop offset="100%" stop-color="#16A085" />
+    </linearGradient>
+    <linearGradient id="goldGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#F1C40F" />
+      <stop offset="100%" stop-color="#D4AC0D" />
+    </linearGradient>
+    <filter id="softGlow" x="-40%" y="-40%" width="180%" height="180%">
+      <feGaussianBlur stdDeviation="8" result="blur" />
+      <feComposite in="SourceGraphic" in2="blur" operator="over" />
+    </filter>
+  </defs>
+
+  <!-- content only, no background — scaled down and centered so Android's
+       adaptive-icon mask (circle/squircle/rounded-square) doesn't crop it -->
+  <g transform="translate(256,256) scale(0.62) translate(-256,-256)">
+    <circle cx="256" cy="256" r="165" fill="none" stroke="url(#tealGrad)" stroke-width="3" stroke-dasharray="9 11" opacity="0.55" />
+    <circle cx="399" cy="173.5" r="19" fill="url(#tealGrad)" stroke="#071B16" stroke-width="3" />
+    <circle cx="399" cy="338.5" r="19" fill="url(#tealGrad)" stroke="#071B16" stroke-width="3" />
+    <circle cx="256" cy="421" r="19" fill="url(#tealGrad)" stroke="#071B16" stroke-width="3" />
+    <circle cx="113" cy="338.5" r="19" fill="url(#tealGrad)" stroke="#071B16" stroke-width="3" />
+    <circle cx="113" cy="173.5" r="19" fill="url(#tealGrad)" stroke="#071B16" stroke-width="3" />
+    <g filter="url(#softGlow)">
+      <circle cx="256" cy="91" r="23" fill="url(#goldGrad)" stroke="#FFFFFF" stroke-width="2.5" />
+    </g>
+    <path d="M 320,110 A 165,165 0 0 1 372,152" fill="none" stroke="url(#goldGrad)" stroke-width="4" stroke-linecap="round" />
+    <path d="M 364,138 L 378,155 L 359,161" fill="none" stroke="url(#goldGrad)" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" />
+    <circle cx="256" cy="256" r="46" fill="url(#goldGrad)" stroke="#FFFFFF" stroke-width="3" />
+    <circle cx="256" cy="256" r="36" fill="none" stroke="#D4AC0D" stroke-width="1.5" />
+    <text x="256" y="272" font-family="Arial, sans-serif" font-weight="bold" font-size="38" fill="#604800" text-anchor="middle">$</text>
+  </g>
+</svg>
