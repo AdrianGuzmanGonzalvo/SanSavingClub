@@ -26,7 +26,7 @@ export function TurnWheel({
   return (
     <div className="flex flex-wrap items-center gap-5">
       <div className="relative h-32 w-32 shrink-0 sm:h-36 sm:w-36">
-        <div className="absolute inset-0 rounded-full border border-dashed border-white/25" />
+        <div className="absolute inset-0 motion-safe:animate-[spin_26s_linear_infinite] rounded-full border border-dashed border-white/25" />
         {members.map((member, i) => {
           const angle = total > 0 ? (i / total) * 2 * Math.PI - Math.PI / 2 : 0;
           const radius = 46;
@@ -35,14 +35,21 @@ export function TurnWheel({
           return (
             <div
               key={member.id}
-              className={
-                member.isCurrent
-                  ? "absolute flex h-10 w-10 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full bg-white text-xs font-bold text-emerald-800 ring-4 ring-white/25"
-                  : "absolute flex h-7 w-7 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full border border-white/30 bg-white/10 text-[10px] font-semibold text-white/70"
-              }
+              className="absolute -translate-x-1/2 -translate-y-1/2"
               style={{ top: `${top}%`, left: `${left}%` }}
             >
-              {member.initials}
+              {member.isCurrent ? (
+                <span className="relative flex h-10 w-10 items-center justify-center">
+                  <span className="absolute inline-flex h-full w-full motion-safe:animate-[ping_2.4s_ease-out_infinite] rounded-full bg-white/50" />
+                  <span className="relative flex h-10 w-10 items-center justify-center rounded-full bg-white text-xs font-bold text-emerald-800">
+                    {member.initials}
+                  </span>
+                </span>
+              ) : (
+                <span className="flex h-7 w-7 items-center justify-center rounded-full border border-white/30 bg-white/10 text-[10px] font-semibold text-white/70">
+                  {member.initials}
+                </span>
+              )}
             </div>
           );
         })}
