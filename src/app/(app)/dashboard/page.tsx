@@ -198,8 +198,8 @@ function ClubSection({
       ) : (
         <div className={`grid gap-3 ${clubs.length > 1 ? "sm:grid-cols-2" : ""}`}>
           {clubs.map((c) => (
-            <Link key={c.clubId} href={`/clubs/${c.clubId}`}>
-              <Card className="relative overflow-hidden border-none bg-gradient-to-br from-emerald-600 via-teal-700 to-indigo-800 text-white shadow-lg transition-all duration-200 hover:-translate-y-0.5 hover:shadow-xl">
+            <Link key={c.clubId} href={`/clubs/${c.clubId}`} className="min-w-0">
+              <Card className="relative min-w-0 overflow-hidden border-none bg-gradient-to-br from-emerald-600 via-teal-700 to-indigo-800 text-white shadow-lg transition-all duration-200 hover:-translate-y-0.5 hover:shadow-xl">
                 <div className="pointer-events-none absolute -top-10 -right-10 h-32 w-32 rounded-full bg-white/10 blur-2xl" />
                 <CardContent className="relative flex items-center justify-between gap-3 py-4">
                   <div className="flex min-w-0 flex-col gap-1">
