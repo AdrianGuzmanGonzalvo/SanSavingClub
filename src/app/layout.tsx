@@ -1,4 +1,5 @@
 import type { Metadata, Viewport } from "next";
+import Script from "next/script";
 import { Geist, Geist_Mono, Plus_Jakarta_Sans } from "next/font/google";
 import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -28,6 +29,7 @@ export const metadata: Metadata = {
   metadataBase: new URL("https://www.sansavingclub.com"),
   title: "SanSavingClub",
   description: "Private group savings (ROSCA / Tanda) with manually tracked monthly contributions.",
+  other: { "google-adsense-account": "ca-pub-9466569123047223" },
 };
 
 // viewport-fit=cover lets the app read env(safe-area-inset-*) — needed so
@@ -49,6 +51,14 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
       className={`${geistSans.variable} ${geistMono.variable} ${plusJakartaSans.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col">
+        {process.env.NODE_ENV === "production" && (
+          <Script
+            async
+            src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9466569123047223"
+            crossOrigin="anonymous"
+            strategy="afterInteractive"
+          />
+        )}
         <NativeStatusBar />
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
           <I18nProvider locale={locale} dict={dict}>
