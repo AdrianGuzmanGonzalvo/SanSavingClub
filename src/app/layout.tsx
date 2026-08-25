@@ -1,5 +1,4 @@
 import type { Metadata, Viewport } from "next";
-import Script from "next/script";
 import { Geist, Geist_Mono, Plus_Jakarta_Sans } from "next/font/google";
 import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -52,11 +51,14 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
     >
       <body className="min-h-full flex flex-col">
         {process.env.NODE_ENV === "production" && (
-          <Script
+          // Plain <script>, not next/script's <Script>: AdSense's site-verification
+          // crawler looks for a literal <script src="..."> tag in the raw HTML.
+          // next/script's beforeInteractive strategy instead emits a <link rel=preload>
+          // plus a __next_s bootstrap array, which the crawler doesn't recognize.
+          <script
             async
             src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9466569123047223"
             crossOrigin="anonymous"
-            strategy="afterInteractive"
           />
         )}
         <NativeStatusBar />
