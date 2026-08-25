@@ -8,6 +8,10 @@ type RouteMember = {
   isDone: boolean;
 };
 
+// Half the width of the largest stop (the 36px current-turn circle), so it
+// never spills past the track's edges at turn 1 or the final turn.
+const INSET = "18px";
+
 export function TurnRoute({
   members,
   currentTurn,
@@ -42,18 +46,18 @@ export function TurnRoute({
       </div>
 
       {total > 0 && (
-        <div className="relative mx-2 h-12">
-          <div className="absolute inset-x-0 top-4 h-[3px] rounded-full bg-white/20" />
+        <div className="relative h-12">
+          <div className="absolute top-4 h-[3px] rounded-full bg-white/20" style={{ left: INSET, right: INSET }} />
           {total > 1 && (
             <div
-              className="absolute top-4 left-0 h-[3px] rounded-full bg-white"
-              style={{ width: `${((progressTurn - 1) / (total - 1)) * 100}%` }}
+              className="absolute top-4 h-[3px] rounded-full bg-white"
+              style={{ left: INSET, width: `calc(${(progressTurn - 1) / (total - 1)} * (100% - 2 * ${INSET}))` }}
             />
           )}
           {members.map((member) => {
-            const left = total > 1 ? ((member.turn - 1) / (total - 1)) * 100 : 50;
+            const pct = total > 1 ? (member.turn - 1) / (total - 1) : 0.5;
             return (
-              <div key={member.id} className="absolute top-0" style={{ left: `${left}%` }}>
+              <div key={member.id} className="absolute top-0" style={{ left: `calc(${INSET} + ${pct} * (100% - 2 * ${INSET}))` }}>
                 <div
                   className={
                     member.isCurrent
