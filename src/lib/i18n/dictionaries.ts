@@ -338,6 +338,8 @@ export const en = {
       referenceNotePlaceholder: "Confirmation #, memo, or note",
       receipt: "Receipt screenshot",
       receiptHint: "Attach a screenshot or photo of your confirmation (optional).",
+      receiptDisclaimer:
+        "Crop or cover account numbers, card digits, and other sensitive banking details before uploading — the club admin will see this image.",
       receiptSelected: "{filename} attached",
       submit: "Submit for review",
       submitting: "Submitting...",
@@ -1075,6 +1077,8 @@ export const es: typeof en = {
       referenceNotePlaceholder: "Número de confirmación, memo o nota",
       receipt: "Comprobante",
       receiptHint: "Adjunta una captura o foto de tu confirmación (opcional).",
+      receiptDisclaimer:
+        "Recorta o cubre números de cuenta, dígitos de tarjeta y otros datos bancarios sensibles antes de subir la imagen — el administrador del club podrá verla.",
       receiptSelected: "{filename} adjuntado",
       submit: "Enviar para revisión",
       submitting: "Enviando...",

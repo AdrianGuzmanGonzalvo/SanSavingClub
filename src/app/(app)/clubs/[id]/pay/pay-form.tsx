@@ -154,6 +154,7 @@ export function PayForm({
               {receiptFilename ? interpolate(t.clubs.pay.receiptSelected, { filename: receiptFilename }) : t.clubs.pay.receiptHint}
             </label>
             <input id="receipt" type="file" accept="image/*" className="hidden" onChange={handleFileChange} />
+            <p className="text-xs text-muted-foreground">{t.clubs.pay.receiptDisclaimer}</p>
           </div>
 
           {error && <p className="text-sm text-destructive">{error}</p>}
