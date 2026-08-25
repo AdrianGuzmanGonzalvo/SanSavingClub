@@ -159,6 +159,17 @@ export default async function DashboardPage() {
   );
 }
 
+function TurnChip({ turn, label }: { turn: number; label: string }) {
+  return (
+    <div
+      className="flex h-9 w-9 shrink-0 flex-col items-center justify-center rounded-full border-2 border-white/60 bg-white/10 text-white"
+      title={label}
+    >
+      <span className="text-sm leading-none font-bold">{turn}</span>
+    </div>
+  );
+}
+
 function ClubSection({
   title,
   emptyMessage,
@@ -190,20 +201,22 @@ function ClubSection({
             <Link key={c.clubId} href={`/clubs/${c.clubId}`}>
               <Card className="relative overflow-hidden border-none bg-gradient-to-br from-emerald-600 via-teal-700 to-indigo-800 text-white shadow-lg transition-all duration-200 hover:-translate-y-0.5 hover:shadow-xl">
                 <div className="pointer-events-none absolute -top-10 -right-10 h-32 w-32 rounded-full bg-white/10 blur-2xl" />
-                <CardContent className="relative flex items-center justify-between py-4">
-                  <div className="flex flex-col gap-1">
-                    <span className="text-lg font-bold text-white">{c.club.name}</span>
-                    <span className="text-sm font-semibold text-white/90">
+                <CardContent className="relative flex items-center justify-between gap-3 py-4">
+                  <div className="flex min-w-0 flex-col gap-1">
+                    <span className="truncate text-lg font-bold text-white">{c.club.name}</span>
+                    <span className="truncate text-sm font-semibold text-white/90">
                       {interpolate(t.dashboard.perMonth, { amount: formatUSD(c.club.quotaAmount) })} &middot;{" "}
-                      {formatClubDuration(t, c.club.durationUnit, c.club.durationCount)} &middot;{" "}
-                      {!c.isParticipant
-                        ? t.dashboard.managingOnly
-                        : c.payoutTurn
-                          ? interpolate(t.dashboard.yourTurn, { turn: c.payoutTurn })
-                          : t.dashboard.turnUnassigned}
+                      {formatClubDuration(t, c.club.durationUnit, c.club.durationCount)}
+                      {!c.isParticipant && ` · ${t.dashboard.managingOnly}`}
                     </span>
                   </div>
-                  <div className="flex items-center gap-2">
+                  <div className="flex shrink-0 items-center gap-2">
+                    {c.isParticipant &&
+                      (c.payoutTurn ? (
+                        <TurnChip turn={c.payoutTurn} label={interpolate(t.dashboard.yourTurn, { turn: c.payoutTurn })} />
+                      ) : (
+                        <span className="text-xs text-white/80">{t.dashboard.turnUnassigned}</span>
+                      ))}
                     <ClubStatusBadge status={c.club.status} t={t} />
                     <ArrowRight className="h-4 w-4 text-white/80" />
                   </div>

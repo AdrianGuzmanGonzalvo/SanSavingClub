@@ -24,6 +24,7 @@ import { ClubSubNav } from "./club-sub-nav";
 import { ExportButtons } from "./export-buttons";
 import type { PaymentHistoryRow } from "@/lib/export";
 import { PaymentHistoryCard, type PaymentHistoryEntry } from "./payment-history";
+import { TurnWheel } from "./turn-wheel";
 
 function initials(name: string) {
   return name.split(" ").map((p) => p[0]).filter(Boolean).slice(0, 2).join("").toUpperCase();
@@ -138,30 +139,27 @@ export default async function ClubDetailPage({ params }: { params: Promise<{ id:
             <p className="text-base font-medium text-white/90">
               {interpolate(t.clubs.detail.clubWelcome, { user: session!.user.name ?? "", name: club.name })}
             </p>
-            <div className="flex flex-col items-start justify-between gap-3 border-t border-white/10 pt-3 sm:flex-row sm:items-center">
-              {payoutMember ? (
-                <div className="flex items-center gap-3">
-                  <Avatar className="h-12 w-12 border border-white/20">
-                    <AvatarFallback className="bg-white/15 text-base font-semibold text-white">
-                      {initials(displayNameFor(payoutMember))}
-                    </AvatarFallback>
-                  </Avatar>
-                  <div>
-                    <p className="text-lg font-bold text-white">{displayNameFor(payoutMember)}</p>
-                    <p className="text-base font-semibold text-white/90">
-                      {interpolate(t.clubs.detail.turnPoolLabel, {
-                        turn: currentCycle,
-                        pool: formatUSD(payoutAmount),
-                      })}
-                    </p>
-                  </div>
-                </div>
-              ) : (
-                <p className="text-base font-semibold text-white/90">{t.clubs.detail.payoutRecipientUnassigned}</p>
-              )}
-              {isAdmin && payoutMember && currentCycleRow && !currentCycleRow.isCompleted && (
-                <MarkPayoutButton clubId={club.id} />
-              )}
+            <div className="border-t border-white/10 pt-3">
+              <TurnWheel
+                members={club.members.map((member) => ({
+                  id: member.id,
+                  initials: initials(displayNameFor(member)),
+                  isCurrent: payoutMember?.userId === member.userId,
+                }))}
+                currentTurn={currentCycle}
+                turnLabel={t.clubs.detail.turn}
+                payoutName={payoutMember ? displayNameFor(payoutMember) : t.clubs.detail.payoutRecipientUnassigned}
+                payoutLabel={
+                  payoutMember
+                    ? interpolate(t.clubs.detail.turnPoolLabel, { turn: currentCycle, pool: formatUSD(payoutAmount) })
+                    : club.name
+                }
+                action={
+                  isAdmin && payoutMember && currentCycleRow && !currentCycleRow.isCompleted ? (
+                    <MarkPayoutButton clubId={club.id} />
+                  ) : undefined
+                }
+              />
             </div>
           </CardContent>
         </Card>
