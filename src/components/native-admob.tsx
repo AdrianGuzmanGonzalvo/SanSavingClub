@@ -29,7 +29,7 @@ export async function showInterstitialAd() {
   if (!Capacitor.isNativePlatform()) return;
   const { AdMob } = await import("@capacitor-community/admob");
   try {
-    await AdMob.prepareInterstitial({ adId: INTERSTITIAL_AD_UNIT_ID, isTesting: true });
+    await AdMob.prepareInterstitial({ adId: INTERSTITIAL_AD_UNIT_ID });
     await AdMob.showInterstitial();
   } catch {
     // Ad not ready/failed to load — never block the user's actual task on this.
