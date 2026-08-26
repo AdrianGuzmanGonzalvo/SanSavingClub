@@ -32,9 +32,9 @@ function initials(name: string) {
 
 function StatChip({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-lg bg-white/10 px-3 py-2">
-      <p className="text-xs font-medium text-white/70">{label}</p>
-      <p className="truncate text-sm font-bold text-white">{value}</p>
+    <div className="rounded-lg bg-amber-300/15 px-3 py-2">
+      <p className="text-xs font-medium text-amber-100/80">{label}</p>
+      <p className="truncate text-sm font-bold text-amber-200">{value}</p>
     </div>
   );
 }
