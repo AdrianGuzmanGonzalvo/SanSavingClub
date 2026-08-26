@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { BarChart3, CalendarDays, LayoutDashboard, Settings, User, Wallet } from "lucide-react";
+import { BarChart3, CalendarDays, Home, LayoutDashboard, Settings, User, Wallet } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { useI18n } from "@/lib/i18n/i18n-provider";
 import { useClubNav } from "@/lib/club-nav-context";
@@ -16,6 +16,7 @@ export function BottomNav({ isLeader, unreadCount }: { isLeader: boolean; unread
 
   const items: NavItem[] = club
     ? [
+        { href: "/dashboard", label: t.header.dashboard, icon: Home },
         { href: `/clubs/${club.clubId}`, label: t.clubs.nav.overview, icon: LayoutDashboard },
         { href: `/clubs/${club.clubId}/calendar`, label: t.clubs.nav.calendar, icon: CalendarDays },
         ...(club.isParticipant || club.isAdmin
