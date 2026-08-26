@@ -17,7 +17,7 @@ export default async function Home() {
 
   return (
     <div className="flex min-h-screen flex-col">
-      <header className="flex items-center justify-between gap-2 border-b px-4 py-4 sm:px-6">
+      <header className="flex items-center justify-between gap-2 border-b px-4 py-4 pt-[calc(1rem+env(safe-area-inset-top))] sm:px-6">
         <div className="flex min-w-0 items-center gap-2 font-semibold">
           <SanClubEmblemLogo className="h-8 w-8 shrink-0" />
           <span className="hidden truncate sm:inline">{t.common.appName}</span>
@@ -71,7 +71,7 @@ export default async function Home() {
           <Link href="/how-it-works">{t.landing.howItWorksLink}</Link>
         </Button>
       </main>
-      <footer className="border-t px-6 py-6 text-center text-sm text-muted-foreground">
+      <footer className="border-t px-6 py-6 pb-[calc(1.5rem+env(safe-area-inset-bottom))] text-center text-sm text-muted-foreground">
         <Link href="/privacy" className="hover:text-foreground hover:underline">
           Privacy Policy
         </Link>

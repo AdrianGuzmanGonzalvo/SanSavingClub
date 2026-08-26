@@ -26,7 +26,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
         unreadCount={unreadCount}
         isLeader={administeredClubsCount > 0}
       />
-      <main className="mx-auto w-full max-w-5xl flex-1 px-6 py-8">{children}</main>
+      <main className="mx-auto w-full max-w-5xl flex-1 px-6 py-8 pb-[calc(2rem+env(safe-area-inset-bottom))]">{children}</main>
     </div>
   );
 }

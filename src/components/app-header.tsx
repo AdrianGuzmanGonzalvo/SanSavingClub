@@ -75,7 +75,7 @@ export function AppHeader({
   }
 
   return (
-    <header className="sticky top-0 z-10 border-b border-slate-200/80 bg-white/80 backdrop-blur-md dark:border-slate-800/80 dark:bg-slate-900/70">
+    <header className="sticky top-0 z-10 border-b border-slate-200/80 bg-white/80 pt-[env(safe-area-inset-top)] backdrop-blur-md dark:border-slate-800/80 dark:bg-slate-900/70">
       <div className="mx-auto flex max-w-5xl items-center justify-between gap-2 px-4 py-3 sm:px-6">
         <Link href="/dashboard" className="flex shrink-0 items-center gap-2 font-semibold">
           <SanClubEmblemLogo className="h-7 w-7" />
