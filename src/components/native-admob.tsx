@@ -16,7 +16,6 @@ export function NativeAdMob() {
         adId: BANNER_AD_UNIT_ID,
         adSize: BannerAdSize.ADAPTIVE_BANNER,
         position: BannerAdPosition.BOTTOM_CENTER,
-        isTesting: true,
       }).catch(() => {});
     });
   }, []);
