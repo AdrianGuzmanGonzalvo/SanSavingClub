@@ -52,43 +52,44 @@ export default async function ClubPayPage({ params }: { params: Promise<{ id: st
       <div className="mx-auto flex w-full max-w-2xl flex-col gap-4">
         {isAdmin && <PaymentApprovalQueue clubId={club.id} reports={pendingReports} />}
 
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base">{t.clubs.pay.instructionsTitle}</CardTitle>
+        <Card className="relative overflow-hidden border-none bg-gradient-to-br from-emerald-600 via-teal-700 to-indigo-800 text-white shadow-lg">
+          <div className="pointer-events-none absolute -top-16 -right-16 h-56 w-56 rounded-full bg-white/10 blur-3xl" />
+          <CardHeader className="relative">
+            <CardTitle className="text-base text-white">{t.clubs.pay.instructionsTitle}</CardTitle>
           </CardHeader>
-          <CardContent className="flex flex-col gap-3">
+          <CardContent className="relative flex flex-col gap-3">
             {hasInstructions ? (
               <>
                 {club.adminZelleInfo && (
                   <div className="flex items-start gap-2 text-sm">
-                    <Smartphone className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
+                    <Smartphone className="mt-0.5 h-4 w-4 shrink-0 text-emerald-200" />
                     <div>
-                      <p className="font-medium">{t.clubs.admin.zelleLabel}</p>
-                      <p className="text-muted-foreground">{club.adminZelleInfo}</p>
+                      <p className="font-medium text-white">{t.clubs.admin.zelleLabel}</p>
+                      <p className="text-white/80">{club.adminZelleInfo}</p>
                     </div>
                   </div>
                 )}
                 {club.adminCashAppInfo && (
                   <div className="flex items-start gap-2 text-sm">
-                    <CreditCard className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
+                    <CreditCard className="mt-0.5 h-4 w-4 shrink-0 text-emerald-200" />
                     <div>
-                      <p className="font-medium">{t.clubs.admin.cashAppLabel}</p>
-                      <p className="text-muted-foreground">{club.adminCashAppInfo}</p>
+                      <p className="font-medium text-white">{t.clubs.admin.cashAppLabel}</p>
+                      <p className="text-white/80">{club.adminCashAppInfo}</p>
                     </div>
                   </div>
                 )}
                 {club.adminBankInfo && (
                   <div className="flex items-start gap-2 text-sm">
-                    <Landmark className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
+                    <Landmark className="mt-0.5 h-4 w-4 shrink-0 text-emerald-200" />
                     <div>
-                      <p className="font-medium">{t.clubs.admin.bankLabel}</p>
-                      <p className="text-muted-foreground">{club.adminBankInfo}</p>
+                      <p className="font-medium text-white">{t.clubs.admin.bankLabel}</p>
+                      <p className="text-white/80">{club.adminBankInfo}</p>
                     </div>
                   </div>
                 )}
               </>
             ) : (
-              <p className="text-sm text-muted-foreground">{t.clubs.pay.noInstructions}</p>
+              <p className="text-sm text-white/80">{t.clubs.pay.noInstructions}</p>
             )}
           </CardContent>
         </Card>

@@ -84,12 +84,13 @@ export function PayForm({
   }
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>{t.clubs.pay.title}</CardTitle>
-        <CardDescription>{t.clubs.pay.subtitle}</CardDescription>
+    <Card className="gap-0 overflow-hidden py-0">
+      <CardHeader className="relative overflow-hidden gap-1 border-b bg-gradient-to-br from-emerald-600 via-teal-700 to-indigo-800 py-5 text-white">
+        <div className="pointer-events-none absolute -top-10 -right-10 h-32 w-32 rounded-full bg-white/10 blur-2xl" />
+        <CardTitle className="relative text-white">{t.clubs.pay.title}</CardTitle>
+        <CardDescription className="relative text-white/80">{t.clubs.pay.subtitle}</CardDescription>
       </CardHeader>
-      <CardContent>
+      <CardContent className="py-4">
         <form ref={formRef} onSubmit={handleSubmit} className="flex flex-col gap-4">
           <input type="hidden" name="receiptDataUrl" value={receiptDataUrl ?? ""} />
 
