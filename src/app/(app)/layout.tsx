@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { BottomNav } from "@/components/bottom-nav";
+import { ClubNavProvider } from "@/lib/club-nav-context";
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   const session = await auth();
@@ -13,11 +14,13 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   ]);
 
   return (
-    <div className="flex min-h-screen flex-col bg-muted/20">
-      <main className="mx-auto w-full max-w-5xl flex-1 px-6 pt-[calc(2rem+env(safe-area-inset-top))] pb-[calc(6rem+env(safe-area-inset-bottom))]">
-        {children}
-      </main>
-      <BottomNav isLeader={administeredClubsCount > 0} unreadCount={unreadCount} />
-    </div>
+    <ClubNavProvider>
+      <div className="flex min-h-screen flex-col bg-muted/20">
+        <main className="mx-auto w-full max-w-5xl flex-1 px-6 pt-[calc(2rem+env(safe-area-inset-top))] pb-[calc(6rem+env(safe-area-inset-bottom))]">
+          {children}
+        </main>
+        <BottomNav isLeader={administeredClubsCount > 0} unreadCount={unreadCount} />
+      </div>
+    </ClubNavProvider>
   );
 }
