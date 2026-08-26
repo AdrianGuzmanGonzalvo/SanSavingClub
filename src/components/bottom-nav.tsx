@@ -30,7 +30,9 @@ export function BottomNav({ isLeader, unreadCount }: { isLeader: boolean; unread
       ];
 
   return (
-    <nav className="fixed inset-x-0 bottom-0 z-10 bg-gradient-to-br from-emerald-600 via-teal-700 to-indigo-800 pb-[env(safe-area-inset-bottom)] shadow-[0_-2px_10px_rgba(0,0,0,0.15)]">
+    <nav
+      className="fixed inset-x-0 bottom-[var(--admob-banner-height,0px)] z-10 bg-gradient-to-br from-emerald-600 via-teal-700 to-indigo-800 pb-[env(safe-area-inset-bottom)] shadow-[0_-2px_10px_rgba(0,0,0,0.15)]"
+    >
       <div className="mx-auto flex max-w-5xl">
         {items.map((item) => {
           const isActive = pathname === item.href;
