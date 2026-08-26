@@ -13,6 +13,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useI18n } from "@/lib/i18n/i18n-provider";
 import { interpolate } from "@/lib/i18n/format";
 import { formatUSD } from "@/lib/format";
+import { showInterstitialAd } from "@/components/native-admob";
 import { submitPaymentReportAction, type PaymentReportFormState } from "../../actions";
 
 const MAX_RECEIPT_BYTES = 2 * 1024 * 1024;
@@ -77,6 +78,7 @@ export function PayForm({
         toast.success(t.clubs.pay.successToast);
         router.push(`/clubs/${clubId}`);
         router.refresh();
+        showInterstitialAd();
       }
     });
   }

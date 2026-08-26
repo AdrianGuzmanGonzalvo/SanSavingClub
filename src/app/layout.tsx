@@ -4,6 +4,7 @@ import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { ThemeProvider } from "@/components/theme-provider";
 import { NativeStatusBar } from "@/components/native-status-bar";
+import { NativeAdMob } from "@/components/native-admob";
 import { I18nProvider } from "@/lib/i18n/i18n-provider";
 import { getDictionary, getLocale } from "@/lib/i18n/locale";
 import "./globals.css";
@@ -62,6 +63,7 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
           />
         )}
         <NativeStatusBar />
+        <NativeAdMob />
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
           <I18nProvider locale={locale} dict={dict}>
             <TooltipProvider delayDuration={200}>
