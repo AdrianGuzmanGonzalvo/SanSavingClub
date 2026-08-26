@@ -551,6 +551,9 @@ export const en = {
   profile: {
     title: "Your profile",
     subtitle: "Manage your personal details and account security.",
+    moreTitle: "More",
+    languageLabel: "Language",
+    appearanceLabel: "Appearance",
     tabs: {
       personal: "Personal Details",
       security: "Security",
@@ -1292,6 +1295,9 @@ export const es: typeof en = {
   profile: {
     title: "Tu perfil",
     subtitle: "Administra tus datos personales y la seguridad de tu cuenta.",
+    moreTitle: "Más",
+    languageLabel: "Idioma",
+    appearanceLabel: "Apariencia",
     tabs: {
       personal: "Datos personales",
       security: "Seguridad",
