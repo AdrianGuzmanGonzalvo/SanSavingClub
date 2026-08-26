@@ -14,10 +14,14 @@ export function BottomNav({ isLeader, unreadCount }: { isLeader: boolean; unread
   const { dict: t } = useI18n();
   const { club } = useClubNav();
 
+  const overviewHref = club ? `/clubs/${club.clubId}` : "";
+  const onOverview = club && pathname === overviewHref;
+
   const items: NavItem[] = club
     ? [
-        { href: "/dashboard", label: t.header.dashboard, icon: Home },
-        { href: `/clubs/${club.clubId}`, label: t.clubs.nav.overview, icon: LayoutDashboard },
+        onOverview
+          ? { href: "/dashboard", label: t.header.dashboard, icon: Home }
+          : { href: overviewHref, label: t.clubs.nav.overview, icon: LayoutDashboard },
         { href: `/clubs/${club.clubId}/calendar`, label: t.clubs.nav.calendar, icon: CalendarDays },
         ...(club.isParticipant || club.isAdmin
           ? [{ href: `/clubs/${club.clubId}/pay`, label: t.clubs.nav.pay, icon: Wallet }]
