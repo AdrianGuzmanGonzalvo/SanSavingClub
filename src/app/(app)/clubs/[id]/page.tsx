@@ -82,6 +82,7 @@ export default async function ClubDetailPage({ params }: { params: Promise<{ id:
   const cycleDueDate = currentCycleRow?.paymentDueDate ?? null;
 
   const payoutMember = currentCycle ? club.members.find((m) => m.payoutTurn === currentCycle) : null;
+  const myTurn = club.members.find((m) => m.userId === currentUserId)?.payoutTurn ?? null;
   const payoutDate = currentCycleRow?.payoutDate ?? null;
   const poolTotal = club.quotaAmount * club.members.length;
   const payoutAmount = currentCycleRow?.payoutAmount ?? poolTotal;
@@ -160,6 +161,12 @@ export default async function ClubDetailPage({ params }: { params: Promise<{ id:
         </CardHeader>
         <CardContent className="relative flex flex-col gap-3">
           <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+            {isParticipant && (
+              <StatChip
+                label={t.clubs.detail.yourTurnChipLabel}
+                value={myTurn ? `#${myTurn}` : t.clubs.detail.unassigned}
+              />
+            )}
             <StatChip label={t.clubs.detail.quotaChipLabel} value={formatUSD(club.quotaAmount)} />
             <StatChip
               label={t.clubs.detail.totalChipLabel}
