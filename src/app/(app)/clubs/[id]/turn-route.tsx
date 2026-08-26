@@ -63,7 +63,7 @@ export function TurnRoute({
                     member.isCurrent
                       ? "absolute -top-2.5 left-1/2 flex h-9 w-9 -translate-x-1/2 items-center justify-center rounded-full bg-white text-[11px] font-bold text-emerald-800 ring-4 ring-white/25"
                       : member.isDone
-                        ? "absolute top-[3px] left-1/2 flex h-[26px] w-[26px] -translate-x-1/2 items-center justify-center rounded-full border-2 border-white/60 bg-white/10 text-[10px] font-bold text-white"
+                        ? "absolute top-[3px] left-1/2 flex h-[26px] w-[26px] -translate-x-1/2 items-center justify-center rounded-full border-2 border-amber-300 bg-white/10 text-[10px] font-bold text-amber-300"
                         : "absolute top-[3px] left-1/2 flex h-[26px] w-[26px] -translate-x-1/2 items-center justify-center rounded-full border-2 border-white/30 bg-white/10 text-[10px] font-bold text-white/70"
                   }
                 >
