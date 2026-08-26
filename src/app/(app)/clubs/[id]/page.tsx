@@ -124,57 +124,6 @@ export default async function ClubDetailPage({ params }: { params: Promise<{ id:
     <div className="flex flex-col gap-6">
       <ClubSubNav clubId={club.id} isAdmin={isAdmin} isParticipant={isParticipant} />
 
-      {currentCycle && payoutDate && cycleDueDate && (
-        <Card className="relative overflow-hidden border-none bg-gradient-to-br from-emerald-600 via-teal-700 to-indigo-800 text-white shadow-lg">
-          <div className="pointer-events-none absolute -top-16 -right-16 h-56 w-56 rounded-full bg-white/10 blur-3xl" />
-          <CardHeader className="relative">
-            <CardTitle className="flex items-center gap-2 text-lg text-white">
-              <Sparkles className="h-5 w-5 text-emerald-200" />
-              <span className="text-base font-bold tracking-wide text-emerald-100">
-                {t.clubs.detail.greetingsTitle}
-              </span>
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="relative flex flex-col gap-4">
-            <p className="text-base font-medium text-white/90">
-              {interpolate(t.clubs.detail.clubWelcome, { user: session!.user.name ?? "", name: club.name })}
-            </p>
-            <div className="border-t border-white/10 pt-3">
-              <TurnRoute
-                members={club.members
-                  .filter((member) => member.payoutTurn !== null)
-                  .sort((a, b) => a.payoutTurn! - b.payoutTurn!)
-                  .map((member) => ({
-                    id: member.id,
-                    initials: initials(displayNameFor(member)),
-                    turn: member.payoutTurn!,
-                    isCurrent: member.payoutTurn === currentCycle,
-                    isDone: member.payoutTurn! < currentCycle,
-                  }))}
-                currentTurn={currentCycle}
-                clubName={club.name}
-                headline={
-                  payoutMember
-                    ? interpolate(t.clubs.detail.turnRouteHeadline, {
-                        turn: currentCycle,
-                        total: club.members.filter((m) => m.payoutTurn !== null).length,
-                        name: displayNameFor(payoutMember),
-                      })
-                    : t.clubs.detail.payoutRecipientUnassigned
-                }
-                poolLabel={interpolate(t.clubs.detail.poolAmountLabel, { pool: formatUSD(payoutAmount) })}
-                payoutDateLabel={interpolate(t.clubs.detail.payoutDateLabel, { date: formatDate(payoutDate, locale) })}
-                action={
-                  isAdmin && payoutMember && currentCycleRow && !currentCycleRow.isCompleted ? (
-                    <MarkPayoutButton clubId={club.id} />
-                  ) : undefined
-                }
-              />
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
       <Card className={`relative overflow-hidden border-none ${goldTeal} text-white shadow-lg`}>
         <div className="pointer-events-none absolute -top-16 -right-16 h-56 w-56 rounded-full bg-white/10 blur-3xl" />
         <div className="pointer-events-none absolute -bottom-20 -left-10 h-56 w-56 rounded-full bg-emerald-300/10 blur-3xl" />
@@ -231,6 +180,57 @@ export default async function ClubDetailPage({ params }: { params: Promise<{ id:
           {isAdmin && club.status === "PENDING" && <ActivateClubButton clubId={club.id} />}
         </CardContent>
       </Card>
+
+      {currentCycle && payoutDate && cycleDueDate && (
+        <Card className="relative overflow-hidden border-none bg-gradient-to-br from-emerald-600 via-teal-700 to-indigo-800 text-white shadow-lg">
+          <div className="pointer-events-none absolute -top-16 -right-16 h-56 w-56 rounded-full bg-white/10 blur-3xl" />
+          <CardHeader className="relative">
+            <CardTitle className="flex items-center gap-2 text-lg text-white">
+              <Sparkles className="h-5 w-5 text-emerald-200" />
+              <span className="text-base font-bold tracking-wide text-emerald-100">
+                {t.clubs.detail.greetingsTitle}
+              </span>
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="relative flex flex-col gap-4">
+            <p className="text-base font-medium text-white/90">
+              {interpolate(t.clubs.detail.clubWelcome, { user: session!.user.name ?? "", name: club.name })}
+            </p>
+            <div className="border-t border-white/10 pt-3">
+              <TurnRoute
+                members={club.members
+                  .filter((member) => member.payoutTurn !== null)
+                  .sort((a, b) => a.payoutTurn! - b.payoutTurn!)
+                  .map((member) => ({
+                    id: member.id,
+                    initials: initials(displayNameFor(member)),
+                    turn: member.payoutTurn!,
+                    isCurrent: member.payoutTurn === currentCycle,
+                    isDone: member.payoutTurn! < currentCycle,
+                  }))}
+                currentTurn={currentCycle}
+                clubName={club.name}
+                headline={
+                  payoutMember
+                    ? interpolate(t.clubs.detail.turnRouteHeadline, {
+                        turn: currentCycle,
+                        total: club.members.filter((m) => m.payoutTurn !== null).length,
+                        name: displayNameFor(payoutMember),
+                      })
+                    : t.clubs.detail.payoutRecipientUnassigned
+                }
+                poolLabel={interpolate(t.clubs.detail.poolAmountLabel, { pool: formatUSD(payoutAmount) })}
+                payoutDateLabel={interpolate(t.clubs.detail.payoutDateLabel, { date: formatDate(payoutDate, locale) })}
+                action={
+                  isAdmin && payoutMember && currentCycleRow && !currentCycleRow.isCompleted ? (
+                    <MarkPayoutButton clubId={club.id} />
+                  ) : undefined
+                }
+              />
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       <Card>
         <CardHeader>
