@@ -76,11 +76,15 @@ export default async function DashboardPage() {
       .map((m) => ({ clubId: m.clubId, club: m.club, payoutTurn: m.payoutTurn, isParticipant: true })),
     ...adminOnlyClubs.map((club) => ({ clubId: club.id, club, payoutTurn: null, isParticipant: false })),
   ];
-  const managedClubs = allManagedClubs.filter((c) => c.club.status !== "COMPLETED");
+  const byActiveFirst = (a: ClubCard, b: ClubCard) =>
+    (a.club.status === "ACTIVE" ? 0 : 1) - (b.club.status === "ACTIVE" ? 0 : 1);
+
+  const managedClubs = allManagedClubs.filter((c) => c.club.status !== "COMPLETED").sort(byActiveFirst);
   const managedCompletedClubs = allManagedClubs.filter((c) => c.club.status === "COMPLETED");
   const joinedClubs: ClubCard[] = memberships
     .filter((m) => m.club.adminId !== userId)
-    .map((m) => ({ clubId: m.clubId, club: m.club, payoutTurn: m.payoutTurn, isParticipant: true }));
+    .map((m) => ({ clubId: m.clubId, club: m.club, payoutTurn: m.payoutTurn, isParticipant: true }))
+    .sort(byActiveFirst);
 
   return (
     <div className="flex flex-col gap-6">
