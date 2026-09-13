@@ -8,6 +8,11 @@ import { BANNER_AD_UNIT_ID, INTERSTITIAL_AD_UNIT_ID } from "@/lib/admob";
 // wrapped native app, never on the regular website (mirrors NativeStatusBar's
 // Capacitor.isNativePlatform() guard).
 //
+// Mounted only in the (app) layout, not the root layout: AdMob policy
+// prohibits ads on screens without publisher content, so login/register/
+// marketing/legal pages must never show a banner — only the authenticated
+// screens with real club/savings data do.
+//
 // The banner is a native overlay, not part of the web page, and it sits at
 // the same screen position as the web-rendered bottom nav — so it reports
 // its own rendered height via events, and we push that into a CSS variable
@@ -16,20 +21,32 @@ import { BANNER_AD_UNIT_ID, INTERSTITIAL_AD_UNIT_ID } from "@/lib/admob";
 export function NativeAdMob() {
   useEffect(() => {
     if (!Capacitor.isNativePlatform()) return;
+    let cancelled = false;
+    const setBannerHeight = (height: number) => {
+      document.documentElement.style.setProperty("--admob-banner-height", `${height}px`);
+    };
+
     import("@capacitor-community/admob").then(async ({ AdMob, BannerAdPluginEvents, BannerAdPosition, BannerAdSize }) => {
-      const setBannerHeight = (height: number) => {
-        document.documentElement.style.setProperty("--admob-banner-height", `${height}px`);
-      };
+      if (cancelled) return;
       AdMob.addListener(BannerAdPluginEvents.SizeChanged, (info) => setBannerHeight(info.height));
       AdMob.addListener(BannerAdPluginEvents.Closed, () => setBannerHeight(0));
 
       await AdMob.initialize();
+      if (cancelled) return;
       await AdMob.showBanner({
         adId: BANNER_AD_UNIT_ID,
         adSize: BannerAdSize.ADAPTIVE_BANNER,
         position: BannerAdPosition.BOTTOM_CENTER,
       }).catch(() => {});
     });
+
+    return () => {
+      cancelled = true;
+      setBannerHeight(0);
+      import("@capacitor-community/admob").then(({ AdMob }) => {
+        AdMob.removeBanner().catch(() => {});
+      });
+    };
   }, []);
 
   return null;
