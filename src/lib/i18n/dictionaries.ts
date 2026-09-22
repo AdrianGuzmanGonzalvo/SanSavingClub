@@ -555,6 +555,7 @@ export const en = {
     moreTitle: "More",
     languageLabel: "Language",
     appearanceLabel: "Appearance",
+    adPrivacyLabel: "Ad privacy options",
     tabs: {
       personal: "Personal Details",
       security: "Security",
@@ -1300,6 +1301,7 @@ export const es: typeof en = {
     moreTitle: "Más",
     languageLabel: "Idioma",
     appearanceLabel: "Apariencia",
+    adPrivacyLabel: "Opciones de privacidad de anuncios",
     tabs: {
       personal: "Datos personales",
       security: "Seguridad",

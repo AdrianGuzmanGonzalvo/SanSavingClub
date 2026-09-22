@@ -10,6 +10,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { UserTrustBadge } from "@/components/user-trust-badge";
 import { LanguageSwitcher } from "@/components/language-switcher";
 import { ThemeToggle } from "@/components/theme-toggle";
+import { AdPrivacyOptionsButton } from "@/components/ad-privacy-options-button";
 import { ProfileDetailsForm } from "./profile-details-form";
 import { ChangePasswordForm } from "./change-password-form";
 import { TwoFactorSection } from "./two-factor-section";
@@ -105,6 +106,7 @@ export default async function ProfilePage() {
           <Link href="/support" className="flex items-center gap-2 px-4 py-3 text-sm font-medium hover:bg-accent">
             <LifeBuoy className="h-4 w-4 text-primary" /> {t.support.navLabel}
           </Link>
+          <AdPrivacyOptionsButton label={t.profile.adPrivacyLabel} />
           <form action={signOutAction}>
             <button
               type="submit"

@@ -3,9 +3,11 @@ import { Geist, Geist_Mono, Plus_Jakarta_Sans } from "next/font/google";
 import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { ThemeProvider } from "@/components/theme-provider";
+import { headers } from "next/headers";
 import { NativeStatusBar } from "@/components/native-status-bar";
 import { I18nProvider } from "@/lib/i18n/i18n-provider";
 import { getDictionary, getLocale } from "@/lib/i18n/locale";
+import { NATIVE_APP_UA_MARKER } from "@/lib/admob";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -43,6 +45,14 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
   const locale = await getLocale();
   const dict = getDictionary(locale);
 
+  // The wrapped native app appends NATIVE_APP_UA_MARKER to its WebView's User-Agent
+  // (capacitor.config.ts) so we can tell it apart from real browser traffic to this
+  // same URL. Google prohibits raw AdSense script code inside a native/hybrid app
+  // WebView — the app shows ads through native-admob.tsx (real AdMob SDK) instead.
+  const userAgent = (await headers()).get("user-agent") ?? "";
+  const isNativeApp = userAgent.includes(NATIVE_APP_UA_MARKER);
+  const showAdSense = process.env.NODE_ENV === "production" && !isNativeApp;
+
   return (
     <html
       lang={locale}
@@ -50,16 +60,27 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
       className={`${geistSans.variable} ${geistMono.variable} ${plusJakartaSans.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col">
-        {process.env.NODE_ENV === "production" && (
-          // Plain <script>, not next/script's <Script>: AdSense's site-verification
-          // crawler looks for a literal <script src="..."> tag in the raw HTML.
-          // next/script's beforeInteractive strategy instead emits a <link rel=preload>
-          // plus a __next_s bootstrap array, which the crawler doesn't recognize.
-          <script
-            async
-            src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9466569123047223"
-            crossOrigin="anonymous"
-          />
+        {showAdSense && (
+          <>
+            {/* Google Funding Choices — CMP for EEA/UK/CH consent, must load before
+                the AdSense script. The actual consent message is configured in the
+                AdSense account's Privacy & messaging settings, not here. */}
+            <script async src="https://fundingchoicesmessages.google.com/i/pub-9466569123047223?ers=1" />
+            <script
+              dangerouslySetInnerHTML={{
+                __html: `(function(){function signalGooglefcPresent(){if(!window.frames['googlefcPresent']){if(document.body){var iframe=document.createElement('iframe');iframe.style.cssText='width:0;height:0;border:none;z-index:-1000;left:-1000px;top:-1000px;';iframe.style.display='none';iframe.name='googlefcPresent';document.body.appendChild(iframe);}else{setTimeout(signalGooglefcPresent,0);}}}signalGooglefcPresent();})();`,
+              }}
+            />
+            {/* Plain <script>, not next/script's <Script>: AdSense's site-verification
+                crawler looks for a literal <script src="..."> tag in the raw HTML.
+                next/script's beforeInteractive strategy instead emits a <link rel=preload>
+                plus a __next_s bootstrap array, which the crawler doesn't recognize. */}
+            <script
+              async
+              src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9466569123047223"
+              crossOrigin="anonymous"
+            />
+          </>
         )}
         <NativeStatusBar />
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>

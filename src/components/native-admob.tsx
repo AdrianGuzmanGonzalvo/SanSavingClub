@@ -4,6 +4,28 @@ import { useEffect } from "react";
 import { Capacitor } from "@capacitor/core";
 import { BANNER_AD_UNIT_ID, INTERSTITIAL_AD_UNIT_ID } from "@/lib/admob";
 
+// Requests/refreshes UMP consent info and shows the consent form when Google's
+// config says one is required (EEA/UK/CH). Must run — and resolve to
+// canRequestAds === true — before any ad is requested, on every ad path.
+// https://developers.google.com/admob/ump/android/quick-start
+async function ensureAdsConsent(): Promise<boolean> {
+  const { AdMob, AdmobConsentStatus } = await import("@capacitor-community/admob");
+  let info = await AdMob.requestConsentInfo();
+  if (info.isConsentFormAvailable && info.status === AdmobConsentStatus.REQUIRED) {
+    info = await AdMob.showConsentForm().catch(() => info);
+  }
+  return info.canRequestAds;
+}
+
+// Opens the privacy options form so a user can change their ad consent choice
+// later (e.g. from a settings screen) — required alongside the consent flow
+// above whenever Google's config marks a privacy options entry point needed.
+export async function showAdPrivacyOptions() {
+  if (!Capacitor.isNativePlatform()) return;
+  const { AdMob } = await import("@capacitor-community/admob");
+  await AdMob.showPrivacyOptionsForm().catch(() => {});
+}
+
 // Initializes AdMob and shows a bottom-anchored banner — only runs inside the
 // wrapped native app, never on the regular website (mirrors NativeStatusBar's
 // Capacitor.isNativePlatform() guard).
@@ -31,6 +53,9 @@ export function NativeAdMob() {
       AdMob.addListener(BannerAdPluginEvents.SizeChanged, (info) => setBannerHeight(info.height));
       AdMob.addListener(BannerAdPluginEvents.Closed, () => setBannerHeight(0));
 
+      const canRequestAds = await ensureAdsConsent();
+      if (cancelled || !canRequestAds) return;
+
       await AdMob.initialize();
       if (cancelled) return;
       await AdMob.showBanner({
@@ -53,11 +78,17 @@ export function NativeAdMob() {
 }
 
 // Loads and shows an interstitial. Call this at a natural break point (e.g.
-// after a task completes) — never mid-task. No-ops outside the native app.
+// after a task completes) — never mid-task, and never tied to a payment/form
+// submission flow (forbidden interstitial placements per
+// https://support.google.com/admob/answer/6201362). No-ops outside the native
+// app or before ad consent is resolved. Assumes the SDK is already
+// initialized by NativeAdMob, which is mounted everywhere this can be called
+// from — initialize() must only run once, at launch.
 export async function showInterstitialAd() {
   if (!Capacitor.isNativePlatform()) return;
   const { AdMob } = await import("@capacitor-community/admob");
   try {
+    if (!(await ensureAdsConsent())) return;
     await AdMob.prepareInterstitial({ adId: INTERSTITIAL_AD_UNIT_ID });
     await AdMob.showInterstitial();
   } catch {
