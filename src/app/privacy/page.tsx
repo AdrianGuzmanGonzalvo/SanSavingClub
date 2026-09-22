@@ -13,7 +13,7 @@ export default function PrivacyPage() {
 
       <div className="flex flex-col gap-2">
         <h1 className="text-2xl font-bold tracking-tight">Privacy Policy</h1>
-        <p className="text-sm text-muted-foreground">Last updated: August 2026</p>
+        <p className="text-sm text-muted-foreground">Last updated: September 2026</p>
       </div>
 
       <div className="flex flex-col gap-6 text-sm leading-relaxed text-muted-foreground">
@@ -34,16 +34,17 @@ export default function PrivacyPage() {
           <p><strong className="text-foreground">Club and contribution data:</strong> the savings clubs you create or join, your payout turn, and the payment reports you submit — amount, date, payment method, an optional reference note, and an optional receipt image you choose to attach.</p>
           <p><strong className="text-foreground">Reputation data:</strong> statistics we compute from your payment history within the app (on-time payment rate, completed clubs) to show other members a trust indicator.</p>
           <p><strong className="text-foreground">Security data:</strong> if you enable two-factor authentication, a secret key and hashed backup codes used only to verify your sign-ins.</p>
-          <p><strong className="text-foreground">Device/usage data:</strong> standard technical logs (IP address, browser type) collected automatically by our hosting provider for security and reliability, not for advertising.</p>
+          <p><strong className="text-foreground">Device/usage data:</strong> standard technical logs (IP address, browser type) collected automatically by our hosting provider for security and reliability. See &quot;Advertising and cookies&quot; below for what our advertising partners separately collect.</p>
         </section>
 
         <section className="flex flex-col gap-2">
           <h2 className="text-base font-semibold text-foreground">How we use this information</h2>
           <p>
-            We use your information only to operate the app: creating and managing your clubs,
+            We use your information to operate the app: creating and managing your clubs,
             tracking contributions and payout turns, sending you transactional emails (password
             resets, notifications about your clubs), and securing your account. We do not sell
-            your data or use it for advertising.
+            your personal information. The website and app do show advertising provided by
+            Google — see &quot;Advertising and cookies&quot; below for what that involves.
           </p>
         </section>
 
@@ -65,6 +66,48 @@ export default function PrivacyPage() {
             your data, an email service to deliver transactional emails, and a hosting platform to
             serve the website and app. These providers process data only on our behalf and don&apos;t
             use it for their own purposes.
+          </p>
+        </section>
+
+        <section className="flex flex-col gap-2">
+          <h2 className="text-base font-semibold text-foreground">Advertising and cookies</h2>
+          <p>
+            SanSavingClub is supported in part by advertising. Our website uses Google AdSense,
+            and our mobile app uses Google AdMob, to show ads. To do this, Google and its
+            advertising partners may use cookies (on the website) or your device&apos;s
+            advertising identifier (in the app), together with your IP address and general device
+            information, to serve ads and measure their performance — and, where you&apos;ve
+            given consent, to personalize the ads you see.
+          </p>
+          <p>
+            For this purpose Google acts independently, not simply on our behalf, and uses this
+            data under its own privacy policy. You can read how Google uses data from sites and
+            apps that use its services at{" "}
+            <a
+              href="https://policies.google.com/technologies/partner-sites"
+              className="text-foreground underline"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              policies.google.com/technologies/partner-sites
+            </a>
+            , and Google&apos;s own Privacy Policy at{" "}
+            <a
+              href="https://policies.google.com/privacy"
+              className="text-foreground underline"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              policies.google.com/privacy
+            </a>
+            .
+          </p>
+          <p>
+            If you&apos;re in the European Economic Area, the UK, or Switzerland, a consent
+            banner lets you choose whether to allow personalized ads the first time you visit the
+            website; you can change that choice anytime from the banner&apos;s settings link. In
+            the mobile app, you can review or change your ad consent choice from{" "}
+            <strong className="text-foreground">Profile → Ad privacy options</strong>.
           </p>
         </section>
 
