@@ -8,13 +8,22 @@ import { BANNER_AD_UNIT_ID, INTERSTITIAL_AD_UNIT_ID } from "@/lib/admob";
 // config says one is required (EEA/UK/CH). Must run — and resolve to
 // canRequestAds === true — before any ad is requested, on every ad path.
 // https://developers.google.com/admob/ump/android/quick-start
+//
+// Fails open (allows ads) on any plugin/network error: a broken consent check
+// is a technical error state, not a user declining consent, and must never
+// silently take down ad serving entirely (that already happened once — see
+// the "Only show the AdMob banner..." / this commit's history).
 async function ensureAdsConsent(): Promise<boolean> {
-  const { AdMob, AdmobConsentStatus } = await import("@capacitor-community/admob");
-  let info = await AdMob.requestConsentInfo();
-  if (info.isConsentFormAvailable && info.status === AdmobConsentStatus.REQUIRED) {
-    info = await AdMob.showConsentForm().catch(() => info);
+  try {
+    const { AdMob, AdmobConsentStatus } = await import("@capacitor-community/admob");
+    let info = await AdMob.requestConsentInfo();
+    if (info.isConsentFormAvailable && info.status === AdmobConsentStatus.REQUIRED) {
+      info = await AdMob.showConsentForm().catch(() => info);
+    }
+    return info.canRequestAds;
+  } catch {
+    return true;
   }
-  return info.canRequestAds;
 }
 
 // Opens the privacy options form so a user can change their ad consent choice
@@ -63,7 +72,7 @@ export function NativeAdMob() {
         adSize: BannerAdSize.ADAPTIVE_BANNER,
         position: BannerAdPosition.BOTTOM_CENTER,
       }).catch(() => {});
-    });
+    }).catch(() => {});
 
     return () => {
       cancelled = true;
