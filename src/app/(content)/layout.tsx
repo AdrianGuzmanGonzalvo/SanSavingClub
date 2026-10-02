@@ -11,7 +11,8 @@ export const metadata: Metadata = {
 // Public content pages — the only routes that carry the AdSense script. Google
 // doesn't allow its ads on screens without publisher content (sign-in forms,
 // error pages, the signed-in app), so the loader lives here rather than in the
-// root layout. The contact and legal pages sit in (no-ads) for the same reason.
+// root layout. Pages that are mostly links or boilerplate (the guides index,
+// about, contact, legal) sit in (no-ads) for the same reason.
 // Links from these pages to anything outside this group must be plain <a>
 // tags, not <Link>: a client-side navigation would keep the already loaded ad
 // script (and any anchor ad it placed) alive on the next screen.

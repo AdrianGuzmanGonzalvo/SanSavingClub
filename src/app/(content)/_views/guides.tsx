@@ -4,11 +4,19 @@ import { notFound } from "next/navigation";
 import { ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { getGuide, guides } from "@/content/guides";
-import { guidesIndex } from "@/content/pages";
+import { agreement, calculator, guidesIndex } from "@/content/pages";
 import { site } from "@/content/site";
-import { contentAlternates, localePath } from "@/lib/content-routes";
+import { SITE_URL, contentAlternates, localePath } from "@/lib/content-routes";
 import { getDictionary, type Locale } from "@/lib/i18n/locale";
-import { ArticleBody, ArticlePage } from "../_components/article";
+import { ArticleBody, ArticlePage, TEXT_LINK_CLASS } from "../_components/article";
+import { JsonLd } from "../_components/json-ld";
+
+// The tool that goes with a guide, linked at the end of it.
+const GUIDE_TOOL: Record<string, "agreement" | "calculator"> = {
+  "how-to-organize-a-san": "calculator",
+  "turn-order": "calculator",
+  "club-rules": "agreement",
+};
 
 export function guidesIndexMetadata(locale: Locale): Metadata {
   return {
@@ -18,6 +26,8 @@ export function guidesIndexMetadata(locale: Locale): Metadata {
   };
 }
 
+// The index lives in (no-ads) and the guides in (content), so the links between
+// them are plain <a> tags — see (content)/layout.tsx.
 export function GuidesIndexView({ locale }: { locale: Locale }) {
   const c = guidesIndex[locale];
 
@@ -30,16 +40,16 @@ export function GuidesIndexView({ locale }: { locale: Locale }) {
       <ul className="flex flex-col gap-4">
         {guides.map((guide) => (
           <li key={guide.slug}>
-            <Link
+            <a
               href={localePath(locale, `/guides/${guide.slug}`)}
               className="flex flex-col gap-2 rounded-lg border p-5 transition-colors hover:bg-accent/50"
             >
               <h2 className="text-lg font-semibold">{guide[locale].title}</h2>
               <p className="text-sm text-muted-foreground">{guide[locale].description}</p>
-              <span className="inline-flex items-center gap-1 text-sm font-medium text-primary">
+              <span className={TEXT_LINK_CLASS}>
                 {c.readGuide} <ArrowRight className="h-4 w-4" />
               </span>
-            </Link>
+            </a>
           </li>
         ))}
       </ul>
@@ -68,6 +78,8 @@ export function GuideView({ locale, slug }: { locale: Locale; slug: string }) {
   const updated = new Intl.DateTimeFormat(s.dateLocale, { dateStyle: "long", timeZone: "UTC" }).format(
     new Date(guide.updated)
   );
+  const tool = GUIDE_TOOL[guide.slug];
+  const publisher = { "@type": "Organization", name: t.common.appName, url: SITE_URL };
 
   return (
     <ArticlePage
@@ -75,7 +87,26 @@ export function GuideView({ locale, slug }: { locale: Locale; slug: string }) {
       description={guide[locale].description}
       meta={`${s.updated}: ${updated}`}
     >
+      <JsonLd
+        data={{
+          "@context": "https://schema.org",
+          "@type": "Article",
+          headline: guide[locale].title,
+          description: guide[locale].description,
+          inLanguage: locale,
+          dateModified: guide.updated,
+          mainEntityOfPage: `${SITE_URL}${localePath(locale, `/guides/${guide.slug}`)}`,
+          author: publisher,
+          publisher,
+        }}
+      />
       <ArticleBody blocks={guide[locale].blocks} />
+
+      {tool && (
+        <Link href={localePath(locale, `/${tool}`)} className={TEXT_LINK_CLASS}>
+          {(tool === "agreement" ? agreement : calculator)[locale].title} <ArrowRight className="h-4 w-4" />
+        </Link>
+      )}
 
       <Button size="lg" asChild className="mt-4 self-start">
         <a href="/register">{t.landing.createClub}</a>
@@ -88,10 +119,7 @@ export function GuideView({ locale, slug }: { locale: Locale; slug: string }) {
             .filter((other) => other.slug !== guide.slug)
             .map((other) => (
               <li key={other.slug}>
-                <Link
-                  href={localePath(locale, `/guides/${other.slug}`)}
-                  className="text-sm text-primary hover:underline"
-                >
+                <Link href={localePath(locale, `/guides/${other.slug}`)} className={TEXT_LINK_CLASS}>
                   {other[locale].title}
                 </Link>
               </li>

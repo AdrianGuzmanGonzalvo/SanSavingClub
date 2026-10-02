@@ -17,6 +17,8 @@ export default function robots(): MetadataRoute.Robots {
         "/help",
         "/reset-password",
         "/api",
+        // Cloudflare's own endpoints (email obfuscation, challenges): nothing to index.
+        "/cdn-cgi/",
       ],
     },
     sitemap: `${BASE_URL}/sitemap.xml`,

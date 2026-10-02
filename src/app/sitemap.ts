@@ -14,6 +14,7 @@ const PAGES: { path: string; priority: number; lastModified?: string }[] = [
   { path: "/guides", priority: 0.8 },
   ...guides.map((guide) => ({ path: `/guides/${guide.slug}`, priority: 0.7, lastModified: guide.updated })),
   { path: "/calculator", priority: 0.7 },
+  { path: "/agreement", priority: 0.7 },
   { path: "/about", priority: 0.5 },
   { path: "/contact", priority: 0.4 },
   { path: "/terms", priority: 0.3 },

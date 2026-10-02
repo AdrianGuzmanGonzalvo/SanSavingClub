@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono, Plus_Jakarta_Sans } from "next/font/google";
 import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
+import { Analytics } from "@vercel/analytics/next";
 import { ThemeProvider } from "@/components/theme-provider";
 import { NativeStatusBar } from "@/components/native-status-bar";
 import { I18nProvider } from "@/lib/i18n/i18n-provider";
@@ -31,6 +32,10 @@ export const metadata: Metadata = {
     template: "%s — SanSavingClub",
   },
   description: "Private group savings (ROSCA / Tanda) with manually tracked monthly contributions.",
+  // Title and description are filled in per page; the image comes from
+  // opengraph-image.png. This is what a link shows when shared in a chat.
+  openGraph: { siteName: "SanSavingClub", type: "website" },
+  twitter: { card: "summary_large_image" },
 };
 
 // viewport-fit=cover lets the app read env(safe-area-inset-*) — needed so
@@ -63,6 +68,8 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
             </TooltipProvider>
           </I18nProvider>
         </ThemeProvider>
+        {/* Cookieless, aggregated page-view counts from the hosting provider. */}
+        <Analytics />
       </body>
     </html>
   );

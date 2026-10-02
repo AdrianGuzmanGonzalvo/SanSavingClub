@@ -1,5 +1,11 @@
 import type { Block } from "@/content/types";
 
+// Text links on content pages. The brand green alone doesn't have enough
+// contrast for small text on the light background, so the link is in the text
+// colour and the green goes on the underline.
+export const TEXT_LINK_CLASS =
+  "inline-flex items-center gap-1 self-start text-sm font-medium text-foreground underline decoration-primary decoration-2 underline-offset-4 hover:decoration-4";
+
 export function ArticleBody({ blocks }: { blocks: Block[] }) {
   return (
     <div className="flex flex-col gap-4 leading-relaxed text-muted-foreground">

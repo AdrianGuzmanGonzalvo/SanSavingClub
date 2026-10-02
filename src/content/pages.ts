@@ -282,6 +282,7 @@ export const home: Localized<{
   steps: { title: string; items: { title: string; description: string }[]; link: string };
   guides: { title: string; subtitle: string; all: string };
   calculator: { title: string; description: string; link: string };
+  agreement: { title: string; description: string; link: string };
   faq: { title: string; items: { question: string; answer: string }[] };
 }> = {
   en: {
@@ -323,6 +324,12 @@ export const home: Localized<{
       description:
         "Enter the number of members and the quota to see the pot per turn, how long the club lasts and the date of every turn.",
       link: "Open the calculator",
+    },
+    agreement: {
+      title: "Put the rules in writing",
+      description:
+        "Fill in your club's quota, dates and late-payment rule and get a short written agreement to share with the group before the first payment.",
+      link: "Create the agreement",
     },
     faq: {
       title: "Frequently asked questions",
@@ -397,6 +404,12 @@ export const home: Localized<{
       description:
         "Ingresa el número de miembros y la cuota para ver el fondo por turno, cuánto dura el club y la fecha de cada turno.",
       link: "Abrir la calculadora",
+    },
+    agreement: {
+      title: "Pon las reglas por escrito",
+      description:
+        "Completa la cuota, las fechas y la regla de pagos atrasados de tu club y obtén un acuerdo corto por escrito para compartir con el grupo antes del primer pago.",
+      link: "Crear el acuerdo",
     },
     faq: {
       title: "Preguntas frecuentes",
@@ -534,3 +547,162 @@ export const calculator: Localized<{
 };
 
 export type CalculatorLabels = (typeof calculator)["en"];
+
+export const agreement: Localized<{
+  title: string;
+  description: string;
+  intro: string[];
+  fields: {
+    club: string;
+    members: string;
+    quota: string;
+    frequency: string;
+    dueDay: string;
+    payoutDay: string;
+    graceDays: string;
+    lateFee: string;
+    organizer: string;
+    methods: string;
+    refund: string;
+  };
+  defaults: { club: string; dueDay: string; payoutDay: string; organizer: string; methods: string };
+  frequencies: { weekly: string; biweekly: string; monthly: string };
+  refunds: { now: string; end: string };
+  heading: string;
+  clauses: {
+    numbers: string;
+    dates: string;
+    commitment: string;
+    lateWithFee: string;
+    lateWithGrace: string;
+    lateSimple: string;
+    payments: string;
+    turns: string;
+    leaving: string;
+    stopping: string;
+    record: string;
+    other: string;
+  };
+  signature: string;
+  copy: string;
+  copied: string;
+  print: string;
+  note: string;
+  guideLink: string;
+}> = {
+  en: {
+    title: "Savings club agreement template",
+    description:
+      "Fill in your club's numbers and get a written agreement for your san or tanda that you can copy and share with the group before the first payment.",
+    intro: [
+      "Most problems in a savings club come from something that was never written down. This tool turns your club's numbers and rules into a short agreement the whole group can read and accept before starting.",
+      "Change any field and the text below updates. Nothing you type here is saved or sent anywhere.",
+    ],
+    fields: {
+      club: "Name of the club",
+      members: "Number of members",
+      quota: "Quota per member",
+      frequency: "How often the group pays",
+      dueDay: "When the quota is due",
+      payoutDay: "When the pot is paid out",
+      graceDays: "Grace period (days)",
+      lateFee: "Late fee",
+      organizer: "Organizer",
+      methods: "Payment methods",
+      refund: "If a member leaves before receiving, what they paid is returned",
+    },
+    defaults: {
+      club: "Our club",
+      dueDay: "on the 1st of each month",
+      payoutDay: "on the 5th of each month",
+      organizer: "the organizer",
+      methods: "Zelle, bank transfer or cash",
+    },
+    frequencies: { weekly: "every week", biweekly: "every two weeks", monthly: "every month" },
+    refunds: { now: "right away", end: "when the club ends" },
+    heading: "Agreement of {club}",
+    clauses: {
+      numbers:
+        "{club} is a savings club with {members} members. Each member pays {quota} {frequency}, for {members} cycles. The pot paid out in each cycle is {pot}.",
+      dates: "The quota is due {dueDay}. The pot is paid out {payoutDay} to the member whose turn it is.",
+      commitment:
+        "Each member commits to paying every quota until the last turn has been paid, including after receiving their own turn.",
+      lateWithFee: "A payment made more than {grace} days after the due date is late and carries a fee of {fee}.",
+      lateWithGrace: "A payment made more than {grace} days after the due date is considered late.",
+      lateSimple: "A payment made after the due date is considered late.",
+      payments: "Payments are sent to {organizer} by {methods}. Every payment is reported with proof.",
+      turns:
+        "The order of turns is agreed before the first payment and shared with all members. Two members may swap turns if both agree and tell the organizer beforehand.",
+      leaving:
+        "A member who needs to leave before receiving their turn tells the organizer as soon as possible. What they paid in is returned {refund}, and the group decides who takes the turn.",
+      stopping: "A member who has received their turn and stops paying still owes the group the remaining quotas.",
+      record: "{Organizer} keeps a record of all payments that any member can consult.",
+      other: "Anything not covered here is decided by a majority of the members.",
+    },
+    signature: "Accepted by the members on: ____________",
+    copy: "Copy the agreement",
+    copied: "Copied",
+    print: "Print",
+    note: "This template is a practical starting point, not legal advice. If your club handles amounts that are significant for its members, consider having the agreement reviewed by someone qualified where you live.",
+    guideLink: "Read the guide to club rules",
+  },
+  es: {
+    title: "Modelo de acuerdo para un club de ahorro",
+    description:
+      "Completa los números de tu club y obtén un acuerdo por escrito para tu san o tanda, que puedes copiar y compartir con el grupo antes del primer pago.",
+    intro: [
+      "La mayoría de los problemas de un club de ahorro vienen de algo que nunca se puso por escrito. Esta herramienta convierte los números y las reglas de tu club en un acuerdo corto que todo el grupo puede leer y aceptar antes de empezar.",
+      "Cambia cualquier campo y el texto de abajo se actualiza. Nada de lo que escribes aquí se guarda ni se envía a ningún lugar.",
+    ],
+    fields: {
+      club: "Nombre del club",
+      members: "Número de miembros",
+      quota: "Cuota por miembro",
+      frequency: "Cada cuánto paga el grupo",
+      dueDay: "Cuándo vence la cuota",
+      payoutDay: "Cuándo se entrega el fondo",
+      graceDays: "Período de gracia (días)",
+      lateFee: "Multa por mora",
+      organizer: "Organizador",
+      methods: "Métodos de pago",
+      refund: "Si un miembro sale antes de recibir, lo que aportó se le devuelve",
+    },
+    defaults: {
+      club: "Nuestro club",
+      dueDay: "el día 1 de cada mes",
+      payoutDay: "el día 5 de cada mes",
+      organizer: "el organizador",
+      methods: "Zelle, transferencia bancaria o efectivo",
+    },
+    frequencies: { weekly: "cada semana", biweekly: "cada dos semanas", monthly: "cada mes" },
+    refunds: { now: "de inmediato", end: "cuando termine el club" },
+    heading: "Acuerdo de {club}",
+    clauses: {
+      numbers:
+        "{club} es un club de ahorro de {members} miembros. Cada miembro paga {quota} {frequency}, durante {members} ciclos. El fondo que se entrega en cada ciclo es de {pot}.",
+      dates: "La cuota vence {dueDay}. El fondo se entrega {payoutDay} al miembro al que le toca el turno.",
+      commitment:
+        "Cada miembro se compromete a pagar todas las cuotas hasta que se haya entregado el último turno, también después de recibir el suyo.",
+      lateWithFee:
+        "Un pago hecho más de {grace} días después de la fecha límite se considera atrasado y lleva una multa de {fee}.",
+      lateWithGrace: "Un pago hecho más de {grace} días después de la fecha límite se considera atrasado.",
+      lateSimple: "Un pago hecho después de la fecha límite se considera atrasado.",
+      payments: "Los pagos se envían a {organizer} por {methods}. Cada pago se reporta con su comprobante.",
+      turns:
+        "El orden de los turnos se acuerda antes del primer pago y se comparte con todos los miembros. Dos miembros pueden intercambiar sus turnos si ambos están de acuerdo y avisan antes al organizador.",
+      leaving:
+        "Un miembro que necesite salir antes de recibir su turno avisa al organizador lo antes posible. Lo que aportó se le devuelve {refund}, y el grupo decide quién toma el turno.",
+      stopping: "Un miembro que ya recibió su turno y deja de pagar sigue debiéndole al grupo las cuotas restantes.",
+      record: "{Organizer} lleva un registro de todos los pagos que cualquier miembro puede consultar.",
+      other: "Lo que no esté previsto aquí se decide por mayoría de los miembros.",
+    },
+    signature: "Aceptado por los miembros el: ____________",
+    copy: "Copiar el acuerdo",
+    copied: "Copiado",
+    print: "Imprimir",
+    note: "Este modelo es un punto de partida práctico, no asesoría legal. Si tu club maneja montos importantes para sus miembros, considera que alguien calificado en el lugar donde vives revise el acuerdo.",
+    guideLink: "Leer la guía de reglas del club",
+  },
+};
+
+export type AgreementLabels = (typeof agreement)["en"];

@@ -5,14 +5,14 @@ export const OPERATOR_NAME = "Adrian Guzman";
 export const CONTACT_EMAIL = "guzmangonzalvo@gmail.com";
 
 export const site: Localized<{
-  nav: { howItWorks: string; guides: string; calculator: string };
+  nav: { howItWorks: string; guides: string; calculator: string; agreement: string };
   footer: { about: string; contact: string; terms: string; privacy: string; disclaimer: string };
   switchLanguage: string;
   updated: string;
   dateLocale: string;
 }> = {
   en: {
-    nav: { howItWorks: "How it works", guides: "Guides", calculator: "Calculator" },
+    nav: { howItWorks: "How it works", guides: "Guides", calculator: "Calculator", agreement: "Agreement" },
     footer: {
       about: "About",
       contact: "Contact",
@@ -26,7 +26,7 @@ export const site: Localized<{
     dateLocale: "en-US",
   },
   es: {
-    nav: { howItWorks: "Cómo funciona", guides: "Guías", calculator: "Calculadora" },
+    nav: { howItWorks: "Cómo funciona", guides: "Guías", calculator: "Calculadora", agreement: "Acuerdo" },
     footer: {
       about: "Acerca de",
       contact: "Contacto",

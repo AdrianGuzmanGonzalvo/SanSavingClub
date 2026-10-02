@@ -11,6 +11,7 @@ export function SiteFooter({ locale }: { locale: Locale }) {
     { path: "/how-it-works", label: s.nav.howItWorks },
     { path: "/guides", label: s.nav.guides },
     { path: "/calculator", label: s.nav.calculator },
+    { path: "/agreement", label: s.nav.agreement },
     { path: "/about", label: s.footer.about },
     { path: "/contact", label: s.footer.contact },
     { path: "/terms", label: s.footer.terms },
@@ -18,7 +19,7 @@ export function SiteFooter({ locale }: { locale: Locale }) {
   ];
 
   return (
-    <footer className="border-t px-6 py-8 pb-[calc(2rem+env(safe-area-inset-bottom))] text-sm text-muted-foreground">
+    <footer className="border-t px-6 py-8 pb-[calc(2rem+env(safe-area-inset-bottom))] text-sm text-muted-foreground print:hidden">
       <div className="mx-auto flex max-w-3xl flex-col items-center gap-4 text-center">
         <nav className="flex flex-wrap justify-center gap-x-5 gap-y-2">
           {links.map((link) => (

@@ -15,12 +15,17 @@ export function SiteHeader({ locale }: { locale: Locale }) {
     { href: localePath(locale, "/how-it-works"), label: s.nav.howItWorks },
     { href: localePath(locale, "/guides"), label: s.nav.guides },
     { href: localePath(locale, "/calculator"), label: s.nav.calculator },
+    { href: localePath(locale, "/agreement"), label: s.nav.agreement },
   ];
 
   return (
-    <header className="border-b">
+    <header className="border-b print:hidden">
       <div className="flex items-center justify-between gap-2 px-4 py-4 pt-[calc(1rem+env(safe-area-inset-top))] sm:px-6">
-        <a href={localePath(locale, "/")} className="flex min-w-0 items-center gap-2 font-semibold">
+        <a
+          href={localePath(locale, "/")}
+          aria-label={t.common.appName}
+          className="flex min-w-0 items-center gap-2 font-semibold"
+        >
           <SanClubEmblemLogo className="h-8 w-8 shrink-0" />
           <span className="hidden truncate sm:inline">{t.common.appName}</span>
         </a>
@@ -42,7 +47,7 @@ export function SiteHeader({ locale }: { locale: Locale }) {
           </Button>
         </div>
       </div>
-      <nav className="flex justify-center gap-1 overflow-x-auto border-t px-2 py-1 lg:hidden">
+      <nav className="flex gap-1 overflow-x-auto border-t px-2 py-1 sm:justify-center lg:hidden">
         {nav.map((item) => (
           <Button key={item.href} variant="ghost" size="sm" asChild>
             <a href={item.href}>{item.label}</a>

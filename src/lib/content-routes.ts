@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import type { Locale } from "@/lib/i18n/locale";
 
+export const SITE_URL = "https://www.sansavingclub.com";
+
 // Public content pages live at the same path in both languages: English at the
 // root (/guides) and Spanish under /es (/es/guides).
 

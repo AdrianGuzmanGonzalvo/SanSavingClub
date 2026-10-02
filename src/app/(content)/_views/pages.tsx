@@ -60,7 +60,7 @@ export function ContactView({ locale }: { locale: Locale }) {
         <span className="flex items-center gap-2 text-sm text-muted-foreground">
           <Mail className="h-4 w-4" /> {c.emailLabel}
         </span>
-        <a href={`mailto:${CONTACT_EMAIL}`} className="text-lg font-medium text-primary hover:underline">
+        <a href={`mailto:${CONTACT_EMAIL}`} className="text-lg font-medium text-foreground underline decoration-primary decoration-2 underline-offset-4">
           {CONTACT_EMAIL}
         </a>
       </div>

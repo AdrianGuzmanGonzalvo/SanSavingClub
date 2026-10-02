@@ -3,11 +3,13 @@ import Link from "next/link";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { ArrowRight, PiggyBank, ShieldCheck, Users } from "lucide-react";
+import { TEXT_LINK_CLASS } from "../_components/article";
+import { JsonLd } from "../_components/json-ld";
 import { auth } from "@/auth";
 import { Button } from "@/components/ui/button";
 import { guides } from "@/content/guides";
 import { home } from "@/content/pages";
-import { contentAlternates, localePath } from "@/lib/content-routes";
+import { SITE_URL, contentAlternates, localePath } from "@/lib/content-routes";
 import { LOCALE_COOKIE, getDictionary, type Locale } from "@/lib/i18n/locale";
 
 const TITLES: Record<Locale, string> = {
@@ -37,6 +39,17 @@ export async function HomeView({ locale }: { locale: Locale }) {
 
   return (
     <>
+      <JsonLd
+        data={{
+          "@context": "https://schema.org",
+          "@type": "WebSite",
+          name: t.common.appName,
+          url: `${SITE_URL}${localePath(locale, "/")}`,
+          description: c.description,
+          inLanguage: locale,
+          publisher: { "@type": "Organization", name: t.common.appName, url: SITE_URL },
+        }}
+      />
       <section className="flex flex-col items-center gap-8 px-6 py-20 text-center">
         <h1 className="max-w-2xl text-4xl font-bold tracking-tight sm:text-5xl">{t.landing.title}</h1>
         <p className="max-w-xl text-lg text-muted-foreground">{t.landing.subtitle}</p>
@@ -112,6 +125,11 @@ export async function HomeView({ locale }: { locale: Locale }) {
         <MoreLink href={localePath(locale, "/calculator")}>{c.calculator.link}</MoreLink>
       </Section>
 
+      <Section title={c.agreement.title}>
+        <p className="leading-relaxed text-muted-foreground">{c.agreement.description}</p>
+        <MoreLink href={localePath(locale, "/agreement")}>{c.agreement.link}</MoreLink>
+      </Section>
+
       <Section title={c.faq.title}>
         <div className="flex flex-col gap-3">
           {c.faq.items.map((item) => (
@@ -144,11 +162,12 @@ function Section({ title, subtitle, children }: { title: string; subtitle?: stri
   );
 }
 
+// A plain <a>: some of these lead to pages without the ad script (the guides index).
 function MoreLink({ href, children }: { href: string; children: React.ReactNode }) {
   return (
-    <Link href={href} className="inline-flex items-center gap-1 self-start text-sm font-medium text-primary hover:underline">
+    <a href={href} className={TEXT_LINK_CLASS}>
       {children} <ArrowRight className="h-4 w-4" />
-    </Link>
+    </a>
   );
 }
 
@@ -156,7 +175,7 @@ function Feature({ icon, title, description }: { icon: React.ReactNode; title: s
   return (
     <div className="flex flex-col items-center gap-2 rounded-lg border p-6">
       {icon}
-      <h3 className="font-semibold">{title}</h3>
+      <h2 className="font-semibold">{title}</h2>
       <p className="text-sm text-muted-foreground">{description}</p>
     </div>
   );

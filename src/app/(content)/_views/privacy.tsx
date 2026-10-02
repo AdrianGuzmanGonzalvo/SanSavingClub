@@ -81,7 +81,7 @@ function PrivacyEn() {
           <p><Strong>Club and contribution data:</Strong> the savings clubs you create or join, your payout turn, and the payment reports you submit — amount, date, payment method, an optional reference note, and an optional receipt image you choose to attach.</p>
           <p><Strong>Reputation data:</Strong> statistics we compute from your payment history within the app (on-time payment rate, completed clubs) to show other members a trust indicator.</p>
           <p><Strong>Security data:</Strong> if you enable two-factor authentication, a secret key and hashed backup codes used only to verify your sign-ins.</p>
-          <p><Strong>Device/usage data:</Strong> standard technical logs (IP address, browser type) collected automatically by our hosting provider for security and reliability. See &quot;Advertising and cookies&quot; below for what our advertising partners separately collect.</p>
+          <p><Strong>Device/usage data:</Strong> standard technical logs (IP address, browser type) collected automatically by our hosting provider for security and reliability, and aggregated visit statistics (pages viewed, country, device type) that don&apos;t use cookies and don&apos;t identify you. See &quot;Advertising and cookies&quot; below for what our advertising partners separately collect.</p>
         </Section>
 
         <Section title="How we use this information">
@@ -190,7 +190,7 @@ function PrivacyEs() {
           <p><Strong>Datos de clubes y aportes:</Strong> los clubes de ahorro que creas o a los que te unes, tu turno de entrega y los reportes de pago que envías: monto, fecha, método de pago, una nota de referencia opcional y una imagen de comprobante opcional que decidas adjuntar.</p>
           <p><Strong>Datos de reputación:</Strong> estadísticas que calculamos a partir de tu historial de pagos dentro de la app (porcentaje de pagos a tiempo, clubes completados) para mostrar a otros miembros un indicador de confianza.</p>
           <p><Strong>Datos de seguridad:</Strong> si activas la verificación en dos pasos, una clave secreta y códigos de respaldo almacenados como hash que se usan únicamente para verificar tus inicios de sesión.</p>
-          <p><Strong>Datos del dispositivo y de uso:</Strong> registros técnicos estándar (dirección IP, tipo de navegador) que nuestro proveedor de alojamiento recopila automáticamente por seguridad y fiabilidad. Consulta «Publicidad y cookies» más abajo para saber qué recopilan por separado nuestros socios publicitarios.</p>
+          <p><Strong>Datos del dispositivo y de uso:</Strong> registros técnicos estándar (dirección IP, tipo de navegador) que nuestro proveedor de alojamiento recopila automáticamente por seguridad y fiabilidad, y estadísticas agregadas de visitas (páginas vistas, país, tipo de dispositivo) que no usan cookies y no te identifican. Consulta «Publicidad y cookies» más abajo para saber qué recopilan por separado nuestros socios publicitarios.</p>
         </Section>
 
         <Section title="Cómo usamos esta información">
