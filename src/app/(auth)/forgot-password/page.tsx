@@ -1,6 +1,11 @@
+import type { Metadata } from "next";
 import { LanguageSwitcher } from "@/components/language-switcher";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { ForgotPasswordForm } from "./forgot-password-form";
+
+export const metadata: Metadata = {
+  title: "Reset your password",
+};
 
 export default function ForgotPasswordPage() {
   return (

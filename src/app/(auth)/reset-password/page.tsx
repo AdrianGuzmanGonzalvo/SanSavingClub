@@ -1,13 +1,18 @@
+import type { Metadata } from "next";
 import { LanguageSwitcher } from "@/components/language-switcher";
 import { ThemeToggle } from "@/components/theme-toggle";
-import { LoginForm } from "./login-form";
+import { ResetPasswordForm } from "./reset-password-form";
 
-export default async function LoginPage({
+export const metadata: Metadata = {
+  title: "Choose a new password",
+};
+
+export default async function ResetPasswordPage({
   searchParams,
 }: {
-  searchParams: Promise<{ callbackUrl?: string }>;
+  searchParams: Promise<{ token?: string }>;
 }) {
-  const { callbackUrl } = await searchParams;
+  const { token } = await searchParams;
 
   return (
     <div className="relative flex min-h-screen items-center justify-center bg-muted/40 p-4">
@@ -15,7 +20,7 @@ export default async function LoginPage({
         <LanguageSwitcher />
         <ThemeToggle />
       </div>
-      <LoginForm callbackUrl={callbackUrl || "/dashboard"} />
+      <ResetPasswordForm token={token ?? ""} />
     </div>
   );
 }

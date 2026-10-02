@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { PiggyBank, ShieldCheck, Users } from "lucide-react";
@@ -8,6 +9,13 @@ import { SanClubEmblemLogo } from "@/components/SanClubEmblemLogo";
 import { auth } from "@/auth";
 import { getDictionary, getLocale } from "@/lib/i18n/locale";
 
+export const metadata: Metadata = {
+  description:
+    "Form a private savings club with people you trust, contribute a fixed quota, and take turns receiving the pooled payout — with receipts, approvals, and a shared calendar.",
+  alternates: { canonical: "/" },
+};
+
+// /login and /register use plain <a> tags on purpose — see (content)/layout.tsx.
 export default async function Home() {
   const session = await auth();
   if (session?.user) redirect("/dashboard");
@@ -29,10 +37,10 @@ export default async function Home() {
           <LanguageSwitcher />
           <ThemeToggle />
           <Button variant="ghost" size="sm" asChild>
-            <Link href="/login">{t.landing.signIn}</Link>
+            <a href="/login">{t.landing.signIn}</a>
           </Button>
           <Button size="sm" asChild>
-            <Link href="/register">{t.landing.getStarted}</Link>
+            <a href="/register">{t.landing.getStarted}</a>
           </Button>
         </div>
       </header>
@@ -42,10 +50,10 @@ export default async function Home() {
         <p className="max-w-xl text-lg text-muted-foreground">{t.landing.subtitle}</p>
         <div className="flex gap-3">
           <Button size="lg" asChild>
-            <Link href="/register">{t.landing.createClub}</Link>
+            <a href="/register">{t.landing.createClub}</a>
           </Button>
           <Button size="lg" variant="outline" asChild>
-            <Link href="/login">{t.landing.signIn}</Link>
+            <a href="/login">{t.landing.signIn}</a>
           </Button>
         </div>
 

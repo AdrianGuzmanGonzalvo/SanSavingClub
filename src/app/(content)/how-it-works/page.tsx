@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import {
   CalendarClock,
@@ -28,6 +29,14 @@ const SECTION_ICONS: LucideIcon[] = [
   LifeBuoy,
 ];
 
+export const metadata: Metadata = {
+  title: "How it works",
+  description:
+    "Step-by-step guide to SanSavingClub: create an account, start or join a savings club, assign payout turns, report payments, and keep track of every due date.",
+  alternates: { canonical: "/how-it-works" },
+};
+
+// /login and /register use plain <a> tags on purpose — see (content)/layout.tsx.
 export default async function HowItWorksPage() {
   const t = getDictionary(await getLocale());
 
@@ -40,10 +49,10 @@ export default async function HowItWorksPage() {
         </Link>
         <div className="flex items-center gap-2">
           <Button variant="ghost" asChild>
-            <Link href="/login">{t.landing.signIn}</Link>
+            <a href="/login">{t.landing.signIn}</a>
           </Button>
           <Button asChild>
-            <Link href="/register">{t.landing.getStarted}</Link>
+            <a href="/register">{t.landing.getStarted}</a>
           </Button>
         </div>
       </header>
@@ -85,7 +94,7 @@ export default async function HowItWorksPage() {
         </div>
 
         <Button size="lg" asChild className="mt-2 self-center">
-          <Link href="/register">{t.landing.createClub}</Link>
+          <a href="/register">{t.landing.createClub}</a>
         </Button>
       </main>
 

@@ -1,7 +1,11 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 
-export const metadata = {
-  title: "Privacy Policy — SanSavingClub",
+export const metadata: Metadata = {
+  title: "Privacy Policy",
+  description:
+    "What information SanSavingClub collects, how it's used and who can see it, including advertising and cookies.",
+  alternates: { canonical: "/privacy" },
 };
 
 export default function PrivacyPage() {
