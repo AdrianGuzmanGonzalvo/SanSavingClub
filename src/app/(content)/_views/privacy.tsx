@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { CONTACT_EMAIL } from "@/content/site";
 import { contentAlternates } from "@/lib/content-routes";
 import type { Locale } from "@/lib/i18n/locale";
 
@@ -50,8 +51,8 @@ function ExternalLink({ href }: { href: string }) {
 
 function Email() {
   return (
-    <a href="mailto:help@sansavingclub.com" className="text-foreground underline">
-      help@sansavingclub.com
+    <a href={`mailto:${CONTACT_EMAIL}`} className="text-foreground underline">
+      {CONTACT_EMAIL}
     </a>
   );
 }
@@ -61,7 +62,7 @@ function PrivacyEn() {
     <>
       <div className="flex flex-col gap-2">
         <h1 className="text-3xl font-bold tracking-tight">Privacy Policy</h1>
-        <p className="text-sm text-muted-foreground">Last updated: September 2026</p>
+        <p className="text-sm text-muted-foreground">Last updated: October 2026</p>
       </div>
 
       <div className="flex flex-col gap-6 text-sm leading-relaxed text-muted-foreground">
@@ -170,7 +171,7 @@ function PrivacyEs() {
     <>
       <div className="flex flex-col gap-2">
         <h1 className="text-3xl font-bold tracking-tight">Política de privacidad</h1>
-        <p className="text-sm text-muted-foreground">Última actualización: septiembre de 2026</p>
+        <p className="text-sm text-muted-foreground">Última actualización: octubre de 2026</p>
       </div>
 
       <div className="flex flex-col gap-6 text-sm leading-relaxed text-muted-foreground">
